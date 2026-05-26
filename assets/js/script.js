@@ -322,10 +322,68 @@ setupFilterSelect(
   "Todos os Autores",
 );
 
+function getItemStatus(item) {
+  if (item.tipo_prazo === "data") {
+    if (item.data_entrega && item.prazo) {
+      return item.data_entrega <= item.prazo ? "no_prazo" : "atrasado";
+    } else if (!item.data_entrega && item.prazo) {
+      const today = new Date().toLocaleDateString("en-CA");
+      return today > item.prazo ? "atrasado_pendente" : "pendente";
+    }
+    return "pendente";
+  } else {
+    if (item.horas_gastas && item.horas_trabalhadas) {
+      return Number(item.horas_gastas) <= Number(item.horas_trabalhadas) ? "no_prazo" : "atrasado";
+    }
+    return "pendente";
+  }
+}
+
+function setupStatusFilterSelect() {
+  const container = document.getElementById("filterStatusContainer");
+  const searchInput = document.getElementById("filterStatusSearch");
+  const hiddenInput = document.getElementById("filterStatus");
+  const dropdown = document.getElementById("filterStatusDropdown");
+  const list = document.getElementById("filterStatusList");
+
+  const options = [
+    { value: "", label: "Todos os Status", icon: "fa-solid fa-list text-slate-400" },
+    { value: "no_prazo", label: "No Prazo / Concluído", icon: "fa-solid fa-circle-check text-emerald-500" },
+    { value: "atrasado", label: "Atrasado", icon: "fa-solid fa-circle-exclamation text-red-500" },
+    { value: "atrasado_pendente", label: "Atrasado - Pendente", icon: "fa-solid fa-clock-rotate-left text-orange-500" },
+    { value: "pendente", label: "Pendente", icon: "fa-solid fa-clock text-amber-500" }
+  ];
+
+  const updateDropdown = () => {
+    dropdown.classList.remove("hidden");
+    list.innerHTML = "";
+
+    options.forEach(opt => {
+      const li = document.createElement("li");
+      li.className = "px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer flex items-center gap-2 transition-colors";
+      li.innerHTML = `<i class="${opt.icon}"></i> ${opt.label}`;
+      li.onmousedown = (e) => {
+        e.preventDefault();
+        searchInput.value = opt.label === "Todos os Status" ? "" : opt.label;
+        hiddenInput.value = opt.value;
+        dropdown.classList.add("hidden");
+        applyFilters();
+      };
+      list.appendChild(li);
+    });
+  };
+
+  searchInput.addEventListener("focus", updateDropdown);
+  document.addEventListener("click", (e) => {
+    if (!container.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
+  });
+}
+
+setupStatusFilterSelect();
+
 document.getElementById("searchInput").addEventListener("input", applyFilters);
-document
-  .getElementById("filterStatus")
-  .addEventListener("change", applyFilters);
 
 function applyFilters() {
   const term = document.getElementById("searchInput").value.toLowerCase();
@@ -340,22 +398,11 @@ function applyFilters() {
     if (autor && item.autor_feedback !== autor) pass = false;
 
     if (status) {
-      if (item.tipo_prazo === "data") {
-        const hasDataEntrega = !!item.data_entrega;
-        const atrasado = hasDataEntrega && item.data_entrega > item.prazo;
-        if (status === "no_prazo" && (!hasDataEntrega || atrasado))
-          pass = false;
-        if (status === "atrasado" && (!hasDataEntrega || !atrasado))
-          pass = false;
+      const itemStatus = getItemStatus(item);
+      if (status === "atrasado") {
+        if (itemStatus !== "atrasado" && itemStatus !== "atrasado_pendente") pass = false;
       } else {
-        const hasHorasGastas = !!item.horas_gastas;
-        const atrasado =
-          hasHorasGastas &&
-          Number(item.horas_gastas) > Number(item.horas_trabalhadas);
-        if (status === "no_prazo" && (!hasHorasGastas || atrasado))
-          pass = false;
-        if (status === "atrasado" && (!hasHorasGastas || !atrasado))
-          pass = false;
+        if (itemStatus !== status) pass = false;
       }
     }
 
@@ -434,26 +481,15 @@ function renderData(data) {
       }
 
       let statusBadge = "";
-      if (item.tipo_prazo === "data") {
-        if (item.data_entrega && item.prazo) {
-          if (item.data_entrega <= item.prazo) {
-            statusBadge = `<span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-check mr-1"></i>No Prazo</span>`;
-          } else {
-            statusBadge = `<span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Atrasado</span>`;
-          }
-        } else if (!item.data_entrega) {
-          statusBadge = `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-regular fa-clock mr-1"></i>Pendente</span>`;
-        }
+      const itemStatus = getItemStatus(item);
+      if (itemStatus === "no_prazo") {
+        statusBadge = `<span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-check mr-1"></i>No Prazo</span>`;
+      } else if (itemStatus === "atrasado") {
+        statusBadge = `<span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Atrasado</span>`;
+      } else if (itemStatus === "atrasado_pendente") {
+        statusBadge = `<span class="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Atrasado - Pendente de preenchimento</span>`;
       } else {
-        if (item.horas_gastas && item.horas_trabalhadas) {
-          if (Number(item.horas_gastas) <= Number(item.horas_trabalhadas)) {
-            statusBadge = `<span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-check mr-1"></i>No Prazo</span>`;
-          } else {
-            statusBadge = `<span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Atrasado</span>`;
-          }
-        } else {
-          statusBadge = `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-regular fa-clock mr-1"></i>Pendente</span>`;
-        }
+        statusBadge = `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-regular fa-clock mr-1"></i>Pendente</span>`;
       }
 
       let prazoHtml = "";
@@ -480,7 +516,7 @@ function renderData(data) {
                     <span class="inline-block px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-primary dark:text-indigo-300 text-xs font-semibold rounded-md mb-2 uppercase tracking-wide">${item.projeto}</span>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">${item.atividade}</h3>
                 </div>
-                <div class="flex-shrink-0 text-right mt-1">
+                <div class="flex-shrink-0 text-right mt-1 font-sans">
                     ${statusBadge}
                 </div>
             </div>

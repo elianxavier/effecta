@@ -1,19 +1,23 @@
 <?php
-require_once 'orm.php';
+require_once 'src/EffectaORM.php';
 
 $orm = new EffectaORM('json');
 $action = $_GET['action'] ?? '';
 
+if ($action) {
+    header('Content-Type: application/json; charset=utf-8');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
 
     if ($action === 'add_person') {
-        echo json_encode($orm->insert('people', ['name' => $input['name']]));
+        echo json_encode($orm->insert('people', ['name' => $input['name'] ?? '']));
         exit;
     }
 
     if ($action === 'add_project') {
-        echo json_encode($orm->insert('projects', ['name' => $input['name']]));
+        echo json_encode($orm->insert('projects', ['name' => $input['name'] ?? '']));
         exit;
     }
 
@@ -50,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -136,13 +140,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action) {
                     <ul id="filterAutorList" class="py-1 text-sm text-slate-700 dark:text-slate-300"></ul>
                 </div>
             </div>
-            <div class="flex-1 min-w-[200px]">
+            <div class="flex-1 min-w-[200px] relative" id="filterStatusContainer">
                 <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Status de Entrega</label>
-                <select id="filterStatus" class="w-full form-input appearance-none bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px_auto] bg-no-repeat bg-[position:right_12px_center] pr-8 cursor-pointer">
-                    <option value="">Todos</option>
-                    <option value="no_prazo">No Prazo / Concluído</option>
-                    <option value="atrasado">Atrasado</option>
-                </select>
+                <input type="hidden" id="filterStatus">
+                <input type="text" id="filterStatusSearch" placeholder="Todos os Status..." class="w-full form-input cursor-pointer" autocomplete="off" readonly>
+                <div id="filterStatusDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 shadow-lg rounded-md border border-slate-200 dark:border-slate-600 max-h-48 overflow-y-auto custom-scrollbar">
+                    <ul id="filterStatusList" class="py-1 text-sm text-slate-700 dark:text-slate-300"></ul>
+                </div>
             </div>
         </div>
 
@@ -274,7 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action) {
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="assets/js/script.js"></script>
 </body>
 
 </html>
