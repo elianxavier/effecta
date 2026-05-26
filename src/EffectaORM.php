@@ -2,11 +2,12 @@
 class EffectaORM
 {
     private $storageType;
-    private $baseDir = __DIR__;
+    private $baseDir;
 
     public function __construct($storageType = 'json')
     {
         $this->storageType = $storageType;
+        $this->baseDir = dirname(__DIR__) . '/data';
     }
 
     private function getFile($table)
@@ -27,7 +28,7 @@ class EffectaORM
             $file = $this->getFile($table);
             $content = json_decode(file_get_contents($file), true) ?: [];
             $content[] = $data;
-            file_put_contents($file, json_encode($content));
+            file_put_contents($file, json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         }
 
         return $data;
