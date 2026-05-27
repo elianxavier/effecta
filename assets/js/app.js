@@ -1,7 +1,7 @@
 // Inicialização das variáveis de estado globais
 window.peopleData = [];
 window.projectsData = [];
-window.allLogsData = [];
+window.allRegistersData = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   loadData();
@@ -62,7 +62,7 @@ async function loadAuxData() {
 }
 
 async function loadData() {
-  window.allLogsData = await EffectaAPI.getLogs();
+  window.allRegistersData = await EffectaAPI.getRegisters();
   window.applyFilters();
 }
 
@@ -133,11 +133,13 @@ if (form) {
     btn.disabled = true;
 
     try {
-      await EffectaAPI.saveLog(data);
+      await EffectaAPI.saveRegister(data);
       closeModal();
       await loadData();
+      showToast("Registro salvo com sucesso!", "success");
     } catch (err) {
-      console.error("Erro ao salvar log:", err);
+      console.error("Erro ao salvar registro:", err);
+      showToast("Erro ao salvar o registro no banco.", "error");
     } finally {
       btn.innerHTML = originalContent;
       btn.disabled = false;
@@ -157,7 +159,7 @@ window.applyFilters = function () {
   const autor = document.getElementById("filterAutor").value;
   const status = document.getElementById("filterStatus").value;
 
-  let filtered = window.allLogsData.filter((item) => {
+  let filtered = window.allRegistersData.filter((item) => {
     let pass = true;
 
     if (proj && item.projeto !== proj) pass = false;
@@ -295,7 +297,6 @@ function renderData(data) {
             
             <div class="flex-grow space-y-3 mb-4">
                 ${item.meta ? `<p class="text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-bullseye w-5 text-slate-400"></i> <strong>Meta:</strong> ${item.meta}</p>` : ""}
-                ${item.o_que_fiz ? `<p class="text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-hammer w-5 text-slate-400"></i> <strong>Ação:</strong> ${item.o_que_fiz}</p>` : ""}
                 ${item.impacto ? `<p class="text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-arrow-trend-up w-5 text-emerald-500"></i> <strong>Impacto:</strong> ${item.impacto}</p>` : ""}
                 ${feedbackHtml}
             </div>

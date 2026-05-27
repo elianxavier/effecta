@@ -72,18 +72,25 @@ function setupSmartSelect(
       addLi.innerHTML = `<i class="fa-solid fa-plus mr-1"></i> Adicionar "${term}"`;
       addLi.onmousedown = async (e) => {
         e.preventDefault();
-        let newItem;
-        if (dataArray === "people") {
-          newItem = await EffectaAPI.addPerson(term);
-          window.peopleData.push(newItem);
-        } else {
-          newItem = await EffectaAPI.addProject(term);
-          window.projectsData.push(newItem);
-        }
+        try {
+          let newItem;
+          if (dataArray === "people") {
+            newItem = await EffectaAPI.addPerson(term);
+            window.peopleData.push(newItem);
+            showToast(`Autor "${term}" adicionado com sucesso!`, "success");
+          } else {
+            newItem = await EffectaAPI.addProject(term);
+            window.projectsData.push(newItem);
+            showToast(`Projeto "${term}" adicionado com sucesso!`, "success");
+          }
 
-        searchInput.value = newItem.name;
-        hiddenInput.value = newItem.name;
-        dropdown.classList.add("hidden");
+          searchInput.value = newItem.name;
+          hiddenInput.value = newItem.name;
+          dropdown.classList.add("hidden");
+        } catch (err) {
+          console.error(err);
+          showToast("Erro ao adicionar item.", "error");
+        }
       };
       list.appendChild(addLi);
     }
@@ -235,4 +242,50 @@ function setupStatusFilterSelect() {
       dropdown.classList.add("hidden");
     }
   });
+}
+
+// Sistema de Toast Notifications
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none';
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = 'flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm font-medium transition-all duration-300 transform -translate-y-2 opacity-0 pointer-events-auto max-w-sm';
+  
+  let icon = 'fa-info-circle text-blue-500';
+  let theme = 'bg-white border-slate-200 text-slate-800 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100';
+  
+  if (type === 'success') {
+    icon = 'fa-circle-check text-emerald-500';
+    theme = 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/20 dark:border-emerald-800/30 dark:text-emerald-300';
+  } else if (type === 'warning' || type === 'alerta') {
+    icon = 'fa-triangle-exclamation text-amber-500';
+    theme = 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/20 dark:border-amber-800/30 dark:text-amber-300';
+  } else if (type === 'error') {
+    icon = 'fa-circle-exclamation text-red-500';
+    theme = 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/20 dark:border-red-800/30 dark:text-red-300';
+  }
+  
+  toast.className += ' ' + theme;
+  toast.innerHTML = `<i class="fa-solid ${icon} text-lg"></i> <span class="flex-grow">${message}</span>`;
+  
+  container.appendChild(toast);
+  
+  // Animation trigger
+  setTimeout(() => {
+    toast.classList.remove('-translate-y-2', 'opacity-0');
+  }, 10);
+  
+  // Remove toast
+  setTimeout(() => {
+    toast.classList.add('opacity-0', '-translate-y-1');
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 4000);
 }

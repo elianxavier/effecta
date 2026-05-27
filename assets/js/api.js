@@ -1,8 +1,8 @@
 const EffectaAPI = {
   baseUrl: "api/index.php",
 
-  async getLogs() {
-    const res = await fetch(`${this.baseUrl}?action=get_logs`);
+  async getRegisters() {
+    const res = await fetch(`${this.baseUrl}?action=get_registers`);
     return await res.json();
   },
 
@@ -34,8 +34,8 @@ const EffectaAPI = {
     return await res.json();
   },
 
-  async saveLog(data) {
-    const res = await fetch(`${this.baseUrl}?action=save_log`, {
+  async saveRegister(data) {
+    const res = await fetch(`${this.baseUrl}?action=save_register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
