@@ -23,7 +23,6 @@ function generateTokensAndSession($orm, $user)
 
     // Grava Sessão no Banco
     $orm->insert('user_sessions', [
-        'id' => $jti,
         'user_id' => $user['id'],
         'refresh_token' => $refreshToken,
         'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',

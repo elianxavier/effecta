@@ -338,13 +338,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'add_project') {
+        echo json_encode($orm->insert('projects', ['name' => $input['name'] ?? ''], $authenticatedUserId));
+        exit;
+    }
+
+    if ($action === 'update_project') {
+        $id = $input['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do projeto e obrigatorio.']);
+            exit;
+        }
+        unset($input['id']);
+        echo json_encode($orm->update('projects', $id, $input, $authenticatedUserId));
+        exit;
+    }
+
+    if ($action === 'delete_project') {
+        $id = $input['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do projeto e obrigatorio.']);
+            exit;
+        }
+        echo json_encode(['success' => $orm->delete('projects', 'id', $id, $authenticatedUserId)]);
+        exit;
+    }
+
     if ($action === 'add_person') {
         echo json_encode($orm->insert('people', ['name' => $input['name'] ?? ''], $authenticatedUserId));
         exit;
     }
 
-    if ($action === 'add_project') {
-        echo json_encode($orm->insert('projects', ['name' => $input['name'] ?? ''], $authenticatedUserId));
+    if ($action === 'update_person') {
+        $id = $input['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID da pessoa e obrigatorio.']);
+            exit;
+        }
+        unset($input['id']);
+        echo json_encode($orm->update('people', $id, $input, $authenticatedUserId));
+        exit;
+    }
+
+    if ($action === 'delete_person') {
+        $id = $input['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID da pessoa e obrigatorio.']);
+            exit;
+        }
+        echo json_encode(['success' => $orm->delete('people', 'id', $id, $authenticatedUserId)]);
         exit;
     }
 

@@ -162,15 +162,15 @@ document.getElementById("searchInput").addEventListener("input", () => {
 // Motor de Filtros
 window.applyFilters = function () {
   const term = document.getElementById("searchInput").value.toLowerCase();
-  const proj = document.getElementById("filterProjeto").value;
-  const autor = document.getElementById("filterAutor").value;
+  const projId = document.getElementById("filterProjeto").value;
+  const autorId = document.getElementById("filterAutor").value;
   const status = document.getElementById("filterStatus").value;
 
   let filtered = window.allRegistersData.filter((item) => {
     let pass = true;
 
-    if (proj && item.projeto !== proj) pass = false;
-    if (autor && item.autor_feedback !== autor) pass = false;
+    if (projId && (String(item.projeto_id) !== String(projId))) pass = false;
+    if (autorId && (String(item.pessoa_feedback_id) !== String(autorId))) pass = false;
 
     if (status) {
       const itemStatus = getItemStatus(item);
@@ -253,10 +253,10 @@ function renderData(data) {
       }
 
       let feedbackHtml = "";
-      if (item.feedbacks && item.autor_feedback) {
+      if (item.feedbacks && item.pessoa_feedback_name && item.pessoa_feedback_name !== 'Nenhum') {
         feedbackHtml = `
             <div class="mt-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
-                <p class="text-xs font-semibold text-primary dark:text-indigo-400 mb-1"><i class="fa-solid fa-quote-left mr-1"></i> ${item.autor_feedback} disse:</p>
+                <p class="text-xs font-semibold text-primary dark:text-indigo-400 mb-1"><i class="fa-solid fa-quote-left mr-1"></i> ${item.pessoa_feedback_name} disse:</p>
                 <p class="text-sm italic text-slate-600 dark:text-slate-300">"${item.feedbacks}"</p>
             </div>`;
       }
@@ -294,7 +294,7 @@ function renderData(data) {
       card.innerHTML = `
             <div class="flex justify-between items-start mb-4 gap-2">
                 <div>
-                    <span class="inline-block px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-primary dark:text-indigo-300 text-xs font-semibold rounded-md mb-2 uppercase tracking-wide">${item.projeto}</span>
+                    <span class="inline-block px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-primary dark:text-indigo-300 text-xs font-semibold rounded-md mb-2 uppercase tracking-wide">${item.projeto_name}</span>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">${item.atividade}</h3>
                 </div>
                 <div class="flex-shrink-0 text-right mt-1 font-sans flex gap-2">
@@ -346,7 +346,7 @@ function getItemStatus(item) {
 
 // Abre o modal em modo de edição
 window.openEditModal = async function (recordId) {
-    const record = window.allRegistersData.find(r => r.id === recordId);
+    const record = window.allRegistersData.find(r => String(r.id) === String(recordId));
     if (!record) {
         showToast("Registro não encontrado para edição.", "error");
         return;
@@ -367,17 +367,6 @@ window.openEditModal = async function (recordId) {
                 if (input.value === record[key]) {
                     input.checked = true;
                 }
-            } else if (input.type === 'hidden') {
-                // Special handling for hidden inputs with associated search inputs
-                if (key === 'projeto') {
-                    form.querySelector('#projetoSearch').value = record[key];
-                    form.querySelector('#projetoHidden').value = record[key];
-                } else if (key === 'autor_feedback') {
-                    form.querySelector('#autorFeedbackSearch').value = record[key];
-                    form.querySelector('#autorFeedbackHidden').value = record[key];
-                } else {
-                    input.value = record[key];
-                }
             } else {
                 if (key === 'horas_trabalhadas' || key === 'horas_gastas') {
                     input.value = decimalToTime(record[key]);
@@ -387,6 +376,12 @@ window.openEditModal = async function (recordId) {
             }
         }
     }
+
+    // Special handling for hidden inputs with associated search inputs
+    document.getElementById('projetoSearch').value = record.projeto_name || "";
+    document.getElementById('projetoHidden').value = record.projeto_id || "";
+    document.getElementById('autorFeedbackSearch').value = record.pessoa_feedback_name !== 'Nenhum' ? record.pessoa_feedback_name : "";
+    document.getElementById('autorFeedbackHidden').value = record.pessoa_feedback_id || "";
 
     // Lida com a alternância de campos de prazo/horas
     window.togglePrazoInput(); 

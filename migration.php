@@ -33,7 +33,7 @@ if ($storageType === 'mysql') {
         // Tabela: users
         echo "Criando tabela `users`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `users` (
-            `id` VARCHAR(50) NOT NULL,
+            `id` INT AUTO_INCREMENT NOT NULL,
             `name` VARCHAR(255) NOT NULL,
             `email` VARCHAR(255) NOT NULL UNIQUE,
             `password_hash` VARCHAR(255) NOT NULL,
@@ -51,8 +51,8 @@ if ($storageType === 'mysql') {
         // Tabela: people
         echo "Criando tabela `people`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `people` (
-            `id` VARCHAR(50) NOT NULL,
-            `user_id` VARCHAR(50) NOT NULL,
+            `id` INT AUTO_INCREMENT NOT NULL,
+            `user_id` INT NOT NULL,
             `name` VARCHAR(255) NOT NULL,
             `created_at` DATETIME NOT NULL,
             PRIMARY KEY (`id`),
@@ -62,8 +62,8 @@ if ($storageType === 'mysql') {
         // Tabela: projects
         echo "Criando tabela `projects`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `projects` (
-            `id` VARCHAR(50) NOT NULL,
-            `user_id` VARCHAR(50) NOT NULL,
+            `id` INT AUTO_INCREMENT NOT NULL,
+            `user_id` INT NOT NULL,
             `name` VARCHAR(255) NOT NULL,
             `created_at` DATETIME NOT NULL,
             PRIMARY KEY (`id`),
@@ -73,9 +73,9 @@ if ($storageType === 'mysql') {
         // Tabela: registers
         echo "Criando tabela `registers`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `registers` (
-            `id` VARCHAR(50) NOT NULL,
-            `user_id` VARCHAR(50) NOT NULL,
-            `projeto` VARCHAR(255) NOT NULL,
+            `id` INT AUTO_INCREMENT NOT NULL,
+            `user_id` INT NOT NULL,
+            `projeto_id` INT NOT NULL,
             `atividade` VARCHAR(255) NOT NULL,
             `tipo_prazo` VARCHAR(20) NOT NULL,
             `horas_trabalhadas` DECIMAL(10,2) DEFAULT NULL,
@@ -87,18 +87,20 @@ if ($storageType === 'mysql') {
             `impacto` TEXT DEFAULT NULL,
             `treinamentos` TEXT DEFAULT NULL,
             `stakeholders` TEXT DEFAULT NULL,
-            `autor_feedback` VARCHAR(255) DEFAULT NULL,
+            `pessoa_feedback_id` INT DEFAULT NULL,
             `feedbacks` TEXT DEFAULT NULL,
             `created_at` DATETIME NOT NULL,
             PRIMARY KEY (`id`),
-            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+            FOREIGN KEY (`projeto_id`) REFERENCES `projects`(`id`) ON DELETE CASCADE,
+            FOREIGN KEY (`pessoa_feedback_id`) REFERENCES `people`(`id`) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Tabela: user_sessions
         echo "Criando tabela `user_sessions`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `user_sessions` (
-            `id` VARCHAR(50) NOT NULL,
-            `user_id` VARCHAR(50) NOT NULL,
+            `id` INT AUTO_INCREMENT NOT NULL,
+            `user_id` INT NOT NULL,
             `refresh_token` VARCHAR(255) NOT NULL,
             `user_agent` TEXT DEFAULT NULL,
             `ip_address` VARCHAR(45) DEFAULT NULL,
@@ -117,15 +119,13 @@ if ($storageType === 'mysql') {
             $now = date('Y-m-d H:i:s');
 
             // Admin
-            $adminId = uniqid();
             $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
-            $stmtInsert = $pdo->prepare("INSERT INTO `users` (id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->execute([$adminId, 'Administrador', 'admin@effecta.com', $adminHash, 'admin', $now]);
+            $stmtInsert = $pdo->prepare("INSERT INTO `users` (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)");
+            $stmtInsert->execute(['Administrador', 'admin@effecta.com', $adminHash, 'admin', $now]);
 
             // Common User
-            $commonId = uniqid();
             $commonHash = password_hash('user123', PASSWORD_BCRYPT);
-            $stmtInsert->execute([$commonId, 'Usuario Comun', 'user@effecta.com', $commonHash, 'common', $now]);
+            $stmtInsert->execute(['Usuario Comun', 'user@effecta.com', $commonHash, 'common', $now]);
 
             echo "Seeders inseridos com sucesso!\n";
         }
@@ -159,7 +159,7 @@ if ($storageType === 'mysql') {
         echo "Inserindo usuarios padrão no JSON (Seeders)...\n";
         $now = date('Y-m-d H:i:s');
         $users[] = [
-            'id' => uniqid(),
+            'id' => 1,
             'name' => 'Administrador',
             'email' => 'admin@effecta.com',
             'password_hash' => password_hash('admin123', PASSWORD_BCRYPT),
@@ -173,7 +173,7 @@ if ($storageType === 'mysql') {
             'created_at' => $now
         ];
         $users[] = [
-            'id' => uniqid(),
+            'id' => 2,
             'name' => 'Usuario Comun',
             'email' => 'user@effecta.com',
             'password_hash' => password_hash('user123', PASSWORD_BCRYPT),
