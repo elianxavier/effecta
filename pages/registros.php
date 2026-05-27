@@ -73,6 +73,7 @@ include_once dirname(__DIR__) . '/src/components/head.php';
                 </div>
 
                 <form id="effectaForm" class="px-6 py-5">
+                    <input type="hidden" name="id" id="recordIdHidden">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="md:col-span-2 relative" id="projetoSelectContainer">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Projeto *</label>

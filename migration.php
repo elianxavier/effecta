@@ -19,39 +19,62 @@ if ($storageType === 'mysql') {
         $pdoInit = new PDO($dsnWithoutDb, $config['user'], $config['password'], [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ]);
-        
+
         // Criação do banco de dados se não existir
         echo "Verificando/Criando o banco de dados '{$config['dbname']}'...\n";
         $pdoInit->exec("CREATE DATABASE IF NOT EXISTS `{$config['dbname']}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        
+
         // Reconecta especificando o banco de dados
         $dsnWithDb = "mysql:host={$config['host']};dbname={$config['dbname']};charset={$config['charset']}";
         $pdo = new PDO($dsnWithDb, $config['user'], $config['password'], [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ]);
 
+        // Tabela: users
+        echo "Criando tabela `users`...\n";
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `users` (
+            `id` VARCHAR(50) NOT NULL,
+            `name` VARCHAR(255) NOT NULL,
+            `email` VARCHAR(255) NOT NULL UNIQUE,
+            `password_hash` VARCHAR(255) NOT NULL,
+            `role` VARCHAR(50) NOT NULL DEFAULT 'common',
+            `active` BOOLEAN NOT NULL DEFAULT TRUE,
+            `date_of_birth` DATE DEFAULT NULL,
+            `phone_number` VARCHAR(20) DEFAULT NULL,
+            `gender` VARCHAR(10) DEFAULT NULL,
+            `profile_picture_url` TEXT DEFAULT NULL,
+            `bio` TEXT DEFAULT NULL,
+            `created_at` DATETIME NOT NULL,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
         // Tabela: people
         echo "Criando tabela `people`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `people` (
             `id` VARCHAR(50) NOT NULL,
+            `user_id` VARCHAR(50) NOT NULL,
             `name` VARCHAR(255) NOT NULL,
             `created_at` DATETIME NOT NULL,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Tabela: projects
         echo "Criando tabela `projects`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `projects` (
             `id` VARCHAR(50) NOT NULL,
+            `user_id` VARCHAR(50) NOT NULL,
             `name` VARCHAR(255) NOT NULL,
             `created_at` DATETIME NOT NULL,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Tabela: registers
         echo "Criando tabela `registers`...\n";
         $pdo->exec("CREATE TABLE IF NOT EXISTS `registers` (
             `id` VARCHAR(50) NOT NULL,
+            `user_id` VARCHAR(50) NOT NULL,
             `projeto` VARCHAR(255) NOT NULL,
             `atividade` VARCHAR(255) NOT NULL,
             `tipo_prazo` VARCHAR(20) NOT NULL,
@@ -67,19 +90,8 @@ if ($storageType === 'mysql') {
             `autor_feedback` VARCHAR(255) DEFAULT NULL,
             `feedbacks` TEXT DEFAULT NULL,
             `created_at` DATETIME NOT NULL,
-            PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
-        // Tabela: users
-        echo "Criando tabela `users`...\n";
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `users` (
-            `id` VARCHAR(50) NOT NULL,
-            `name` VARCHAR(255) NOT NULL,
-            `email` VARCHAR(255) NOT NULL UNIQUE,
-            `password_hash` VARCHAR(255) NOT NULL,
-            `role` VARCHAR(50) NOT NULL DEFAULT 'common',
-            `created_at` DATETIME NOT NULL,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Tabela: user_sessions
@@ -103,23 +115,22 @@ if ($storageType === 'mysql') {
         if ($userCount == 0) {
             echo "Inserindo usuarios padrão (Seeders)...\n";
             $now = date('Y-m-d H:i:s');
-            
+
             // Admin
             $adminId = uniqid();
             $adminHash = password_hash('admin123', PASSWORD_BCRYPT);
             $stmtInsert = $pdo->prepare("INSERT INTO `users` (id, name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?, ?)");
             $stmtInsert->execute([$adminId, 'Administrador', 'admin@effecta.com', $adminHash, 'admin', $now]);
-            
+
             // Common User
             $commonId = uniqid();
             $commonHash = password_hash('user123', PASSWORD_BCRYPT);
             $stmtInsert->execute([$commonId, 'Usuario Comun', 'user@effecta.com', $commonHash, 'common', $now]);
-            
+
             echo "Seeders inseridos com sucesso!\n";
         }
 
         echo "Migracao MySQL concluida com sucesso!\n";
-
     } catch (PDOException $e) {
         echo "Erro de Conexao/SQL: " . $e->getMessage() . "\n";
         exit(1);
@@ -153,6 +164,12 @@ if ($storageType === 'mysql') {
             'email' => 'admin@effecta.com',
             'password_hash' => password_hash('admin123', PASSWORD_BCRYPT),
             'role' => 'admin',
+            'active' => true,
+            'date_of_birth' => null,
+            'phone_number' => null,
+            'gender' => null,
+            'profile_picture_url' => null,
+            'bio' => null,
             'created_at' => $now
         ];
         $users[] = [
@@ -161,6 +178,12 @@ if ($storageType === 'mysql') {
             'email' => 'user@effecta.com',
             'password_hash' => password_hash('user123', PASSWORD_BCRYPT),
             'role' => 'common',
+            'active' => true,
+            'date_of_birth' => null,
+            'phone_number' => null,
+            'gender' => null,
+            'profile_picture_url' => null,
+            'bio' => null,
             'created_at' => $now
         ];
         file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
