@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__DIR__) . '/src/config/env.php';
 require_once dirname(__DIR__) . '/src/EffectaORM.php';
 require_once dirname(__DIR__) . '/src/helpers/SimpleJWT.php';
 
@@ -136,6 +137,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'google_login') {
 
     $googleUser = json_decode($response, true);
     $email = $googleUser['email'] ?? '';
+
+    // Verifica se o token foi emitido para o client ID correto
+    $googleClientId = getenv('GOOGLE_CLIENT_ID');
+    if (!$googleClientId || ($googleUser['aud'] ?? '') !== $googleClientId) {
+        http_response_code(401);
+        echo json_encode(['error' => 'ID Token do Google invalido para este aplicativo.']);
+        exit;
+    }
     
     if (empty($email)) {
         http_response_code(400);

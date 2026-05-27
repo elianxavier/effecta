@@ -44,6 +44,43 @@ A configuração é centralizada no arquivo `src/config/database.php`.
 
 ---
 
+## 🔒 Configuração de Ambiente (.env) e JWT_SECRET
+
+Para garantir a segurança de informações sensíveis, como chaves secretas, utilize um arquivo `.env`.
+
+### Como configurar:
+1. Crie um arquivo chamado `.env` na raiz do projeto (`C:\xampp\htdocs\effecta\`).
+2. Adicione a seguinte linha ao arquivo `.env`, substituindo `your_super_secret_jwt_key_here` por uma chave secreta forte e única:
+
+   ```
+   JWT_SECRET=your_super_secret_jwt_key_here
+   ```
+   **Importante:** Nunca adicione o arquivo `.env` ao controle de versão (Git), pois ele contém informações sensíveis. Ele já está configurado para ser ignorado pelo `.gitignore`.
+
+---
+
+## 🔑 Configuração de Login com Google
+
+O sistema oferece a opção de login via Google. Para habilitar e configurar esta funcionalidade, você precisará obter credenciais do Google Cloud Console.
+
+### Passo a Passo:
+1. Acesse o [Google Cloud Console](https://console.cloud.google.com/).
+2. Crie um novo projeto ou selecione um existente.
+3. Navegue até "APIs e serviços" > "Credenciais".
+4. Clique em "Criar credenciais" e selecione "ID do cliente OAuth".
+5. Escolha o tipo de aplicativo "Aplicativo da Web".
+6. Configure os "URIs de redirecionamento autorizados". Para desenvolvimento local, você pode usar:
+   - `http://localhost/effecta/api/index.php?action=google_login` (ou a URL base do seu servidor + `/api/index.php?action=google_login`)
+7. Após criar as credenciais, você receberá um "ID do cliente".
+8. Adicione este ID do cliente ao seu arquivo `.env` que você criou anteriormente:
+
+   ```
+   GOOGLE_CLIENT_ID=seu_id_do_cliente_google_aqui
+   ```
+   O `api/index.php` utiliza este `GOOGLE_CLIENT_ID` para validar o token do Google.
+
+---
+
 ## ⚡ Rodando as Migrações do Banco
 
 Em vez de criar as tabelas manualmente, você pode executar o script de migração diretamente no terminal a partir do diretório raiz:

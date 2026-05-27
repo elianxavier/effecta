@@ -53,7 +53,7 @@ include_once dirname(__DIR__) . '/src/components/head.php';
             <script src="https://accounts.google.com/gsi/client" async defer></script>
             
             <div id="g_id_onload"
-                 data-client_id="1044498305716-hpeqdtomk7s9k0bpt9gopggrsfgspomc.apps.googleusercontent.com"
+                 data-client_id="610767295925-66chlec1n5935cpkicqvfknei9jt1qdt.apps.googleusercontent.com"
                  data-context="signin"
                  data-ux_mode="popup"
                  data-callback="handleGoogleLogin"

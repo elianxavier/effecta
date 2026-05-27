@@ -1,14 +1,25 @@
 <?php
 class SimpleJWT
 {
-    private static $secret = "effecta_super_secret_key_123456_amazing_jwt_key";
+    private static $secret = null; // Initialize to null
+
+    private static function getSecret() {
+        if (self::$secret === null) {
+            self::$secret = getenv('JWT_SECRET');
+            if (self::$secret === false) {
+                // Handle error: JWT_SECRET not set
+                throw new Exception('JWT_SECRET environment variable not set.');
+            }
+        }
+        return self::$secret;
+    }
 
     public static function encode($payload)
     {
         $header = json_encode(['alg' => 'HS256', 'typ' => 'JWT']);
         $base64UrlHeader = self::base64UrlEncode($header);
         $base64UrlPayload = self::base64UrlEncode(json_encode($payload));
-        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::$secret, true);
+        $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, self::getSecret(), true);
         $base64UrlSignature = self::base64UrlEncode($signature);
         return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
     }
@@ -18,7 +29,7 @@ class SimpleJWT
         $parts = explode('.', $jwt);
         if (count($parts) !== 3) return null;
         list($header, $payload, $signature) = $parts;
-        $sig = hash_hmac('sha256', $header . "." . $payload, self::$secret, true);
+        $sig = hash_hmac('sha256', $header . "." . $payload, self::getSecret(), true);
         if (!hash_equals(self::base64UrlDecode($signature), $sig)) {
             return null;
         }

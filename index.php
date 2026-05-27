@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/src/config/env.php';
+
 // Previne cache do navegador para evitar o botão de voltar acessar páginas privadas após logout
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
