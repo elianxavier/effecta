@@ -110,5 +110,71 @@ const EffectaAPI = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+  },
+
+  async updateRegister(id, data) {
+    return this.request(`${this.baseUrl}?action=update_register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...data }),
+    });
+  },
+
+  async deleteRegister(id) {
+    return this.request(`${this.baseUrl}?action=delete_register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  },
+
+  // User Management
+  async getUsers() {
+    return this.request(`${this.baseUrl}?action=get_users`);
+  },
+
+  async createUser(data) {
+    return this.request(`${this.baseUrl}?action=create_user`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateUser(id, data) {
+    return this.request(`${this.baseUrl}?action=update_user`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...data }),
+    });
+  },
+
+  async toggleUserStatus(id, activeStatus) {
+    return this.request(`${this.baseUrl}?action=toggle_user_status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, active: activeStatus }),
+    });
+  },
+
+  // User Profile Management
+  async getMyProfile() {
+    return this.request(`${this.baseUrl}?action=get_my_profile`);
+  },
+
+  async updateMyProfile(data) {
+    return this.request(`${this.baseUrl}?action=update_my_profile`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async changeMyPassword(data) {
+    return this.request(`${this.baseUrl}?action=change_my_password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
   }
 };

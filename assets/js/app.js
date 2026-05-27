@@ -133,13 +133,20 @@ if (form) {
     btn.disabled = true;
 
     try {
-      await EffectaAPI.saveRegister(data);
+      const recordId = document.getElementById("recordIdHidden").value;
+      if (recordId) {
+        await EffectaAPI.updateRegister(recordId, data);
+        showToast("Registro atualizado com sucesso!", "success");
+      } else {
+        await EffectaAPI.saveRegister(data);
+        showToast("Registro salvo com sucesso!", "success");
+      }
+      
       closeModal();
       await loadData();
-      showToast("Registro salvo com sucesso!", "success");
     } catch (err) {
-      console.error("Erro ao salvar registro:", err);
-      showToast("Erro ao salvar o registro no banco.", "error");
+      console.error("Erro ao salvar/atualizar registro:", err);
+      showToast("Erro ao salvar/atualizar o registro.", "error");
     } finally {
       btn.innerHTML = originalContent;
       btn.disabled = false;
@@ -290,7 +297,13 @@ function renderData(data) {
                     <span class="inline-block px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-primary dark:text-indigo-300 text-xs font-semibold rounded-md mb-2 uppercase tracking-wide">${item.projeto}</span>
                     <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">${item.atividade}</h3>
                 </div>
-                <div class="flex-shrink-0 text-right mt-1 font-sans">
+                <div class="flex-shrink-0 text-right mt-1 font-sans flex gap-2">
+                    <button class="text-slate-400 hover:text-indigo-500 transition-colors" title="Editar Registro" onclick="openEditModal('${item.id}')">
+                        <i class="fa-solid fa-pencil text-sm"></i>
+                    </button>
+                    <button class="text-slate-400 hover:text-red-500 transition-colors" title="Excluir Registro" onclick="deleteRecord('${item.id}')">
+                        <i class="fa-solid fa-trash-alt text-sm"></i>
+                    </button>
                     ${statusBadge}
                 </div>
             </div>
@@ -330,3 +343,69 @@ function getItemStatus(item) {
     return "pendente";
   }
 }
+
+// Abre o modal em modo de edição
+window.openEditModal = async function (recordId) {
+    const record = window.allRegistersData.find(r => r.id === recordId);
+    if (!record) {
+        showToast("Registro não encontrado para edição.", "error");
+        return;
+    }
+
+    const form = document.getElementById("effectaForm");
+    form.reset(); // Limpa o formulário antes de preencher
+
+    // Preenche os campos do formulário com os dados do registro
+    form.querySelector('#recordIdHidden').value = record.id; // Campo oculto para o ID do registro
+    document.getElementById('modal-title').textContent = 'Editar Registro';
+
+    // Campos de texto e textarea
+    for (const key in record) {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input) {
+            if (input.type === 'radio') {
+                if (input.value === record[key]) {
+                    input.checked = true;
+                }
+            } else if (input.type === 'hidden') {
+                // Special handling for hidden inputs with associated search inputs
+                if (key === 'projeto') {
+                    form.querySelector('#projetoSearch').value = record[key];
+                    form.querySelector('#projetoHidden').value = record[key];
+                } else if (key === 'autor_feedback') {
+                    form.querySelector('#autorFeedbackSearch').value = record[key];
+                    form.querySelector('#autorFeedbackHidden').value = record[key];
+                } else {
+                    input.value = record[key];
+                }
+            } else {
+                if (key === 'horas_trabalhadas' || key === 'horas_gastas') {
+                    input.value = decimalToTime(record[key]);
+                } else {
+                    input.value = record[key];
+                }
+            }
+        }
+    }
+
+    // Lida com a alternância de campos de prazo/horas
+    window.togglePrazoInput(); 
+
+    openModal(); // Abre o modal
+};
+
+// Deleta um registro
+window.deleteRecord = async function (recordId) {
+    if (!confirm("Tem certeza que deseja excluir este registro?")) {
+        return;
+    }
+
+    try {
+        await EffectaAPI.deleteRegister(recordId);
+        await loadData(); // Recarrega os dados após a exclusão
+        showToast("Registro excluído com sucesso!", "success");
+    } catch (err) {
+        console.error("Erro ao excluir registro:", err);
+        showToast("Erro ao excluir o registro.", "error");
+    }
+};
