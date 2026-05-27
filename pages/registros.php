@@ -77,7 +77,7 @@ include_once dirname(__DIR__) . '/src/components/head.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="md:col-span-2 relative" id="projetoSelectContainer">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Projeto *</label>
-                            <input type="hidden" name="projeto" id="projetoHidden" required>
+                            <input type="hidden" name="projeto_id" id="projetoHidden" required>
                             <input type="text" id="projetoSearch" placeholder="Pesquise ou adicione projeto..." class="w-full form-input" autocomplete="off" required>
 
                             <div id="projetoDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 shadow-lg rounded-md border border-slate-200 dark:border-slate-600 max-h-48 overflow-y-auto custom-scrollbar">
@@ -150,7 +150,7 @@ include_once dirname(__DIR__) . '/src/components/head.php';
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="md:col-span-2 relative" id="autorSelectContainer">
                                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Autor do Feedback</label>
-                                    <input type="hidden" name="autor_feedback" id="autorFeedbackHidden">
+                                    <input type="hidden" name="pessoa_feedback_id" id="autorFeedbackHidden">
                                     <input type="text" id="autorFeedbackSearch" placeholder="Pesquise ou adicione..." class="w-full form-input" autocomplete="off">
 
                                     <div id="autorDropdown" class="hidden absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 shadow-lg rounded-md border border-slate-200 dark:border-slate-600 max-h-48 overflow-y-auto custom-scrollbar">

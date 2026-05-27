@@ -133,11 +133,43 @@ const EffectaAPI = {
     });
   },
 
+  async updatePerson(id, name) {
+    return this.request(`${this.baseUrl}?action=update_person`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, name }),
+    });
+  },
+
+  async deletePerson(id) {
+    return this.request(`${this.baseUrl}?action=delete_person`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  },
+
   async addProject(name) {
     return this.request(`${this.baseUrl}?action=add_project`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
+    });
+  },
+
+  async updateProject(id, name) {
+    return this.request(`${this.baseUrl}?action=update_project`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, name }),
+    });
+  },
+
+  async deleteProject(id) {
+    return this.request(`${this.baseUrl}?action=delete_project`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
     });
   },
 
