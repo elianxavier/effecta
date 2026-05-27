@@ -443,6 +443,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    if ($action === 'import_data') {
+        $people = $input['people'] ?? [];
+        $projects = $input['projects'] ?? [];
+        $registers = $input['registers'] ?? [];
+
+        try {
+            foreach ($people as $person) {
+                unset($person['id']);
+                unset($person['created_at']);
+                unset($person['user_id']);
+                $orm->insert('people', $person, $authenticatedUserId);
+            }
+
+            foreach ($projects as $project) {
+                unset($project['id']);
+                unset($project['created_at']);
+                unset($project['user_id']);
+                $orm->insert('projects', $project, $authenticatedUserId);
+            }
+
+            foreach ($registers as $register) {
+                unset($register['id']);
+                unset($register['created_at']);
+                unset($register['user_id']);
+                $orm->insert('registers', $register, $authenticatedUserId);
+            }
+
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
 
 // API Routes (GET)
@@ -492,6 +527,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     if ($action === 'get_registers') {
         echo json_encode($orm->getAll('registers', $authenticatedUserId));
+        exit;
+    }
+
+    if ($action === 'get_export_data') {
+        $data = [
+            'people' => $orm->getAll('people', $authenticatedUserId),
+            'projects' => $orm->getAll('projects', $authenticatedUserId),
+            'registers' => $orm->getAll('registers', $authenticatedUserId)
+        ];
+        echo json_encode($data);
         exit;
     }
 }
