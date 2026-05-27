@@ -213,5 +213,17 @@ const EffectaAPI = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+  },
+
+  async getExportData() {
+    return this.request(`${this.baseUrl}?action=get_export_data`);
+  },
+
+  async importData(data) {
+    return this.request(`${this.baseUrl}?action=import_data`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
   }
 };
