@@ -56,7 +56,7 @@ function setupSmartSelect(
       li.onmousedown = (e) => {
         e.preventDefault();
         searchInput.value = item.name;
-        hiddenInput.value = item.name;
+        hiddenInput.value = item.id;
         dropdown.classList.add("hidden");
       };
       list.appendChild(li);
@@ -85,7 +85,7 @@ function setupSmartSelect(
           }
 
           searchInput.value = newItem.name;
-          hiddenInput.value = newItem.name;
+          hiddenInput.value = newItem.id;
           dropdown.classList.add("hidden");
         } catch (err) {
           console.error(err);
@@ -163,7 +163,7 @@ function setupFilterSelect(
       li.onmousedown = (e) => {
         e.preventDefault();
         searchInput.value = item.name;
-        hiddenInput.value = item.name;
+        hiddenInput.value = item.id;
         dropdown.classList.add("hidden");
         if (typeof window.applyFilters === "function") window.applyFilters();
       };
