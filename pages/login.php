@@ -132,7 +132,6 @@ include_once dirname(__DIR__) . '/src/components/head.php';
         function saveSessionAndRedirect(data) {
             // Guarda tokens no localStorage
             localStorage.setItem("access_token", data.access_token);
-            localStorage.setItem("refresh_token", data.refresh_token);
             localStorage.setItem("user_name", data.user.name);
             localStorage.setItem("user_role", data.user.role);
 
