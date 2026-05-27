@@ -1,6 +1,8 @@
 <?php
 $userName = "Usuario";
 $userInitials = "US";
+$currentPage = $_GET['page'] ?? 'registros'; // Get current page from URL
+
 if (isset($_COOKIE['access_token'])) {
     $payload = SimpleJWT::decode($_COOKIE['access_token']);
     if ($payload && isset($payload['name'])) {
@@ -19,7 +21,11 @@ if (isset($_COOKIE['access_token'])) {
                     <span class="font-bold text-xl tracking-tight">Effecta</span>
                 </div>
                 <nav class="hidden md:flex space-x-8">
-                    <a href="index.php?page=registros" class="border-b-2 border-primary text-slate-900 dark:text-white px-1 pt-1 text-sm font-medium">Registros</a>
+                    <a href="index.php?page=registros" class="<?= ($currentPage === 'registros') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Registros</a>
+                    <?php if (isset($payload['role']) && $payload['role'] === 'admin'): ?>
+                        <a href="index.php?page=users" class="<?= ($currentPage === 'users') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciamento de Usuários</a>
+                    <?php endif; ?>
+                    <a href="index.php?page=profile" class="<?= ($currentPage === 'profile') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Meu Perfil</a>
                 </nav>
             </div>
             <div class="flex items-center gap-4">

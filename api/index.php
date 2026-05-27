@@ -194,6 +194,9 @@ if (!$userPayload) {
     exit;
 }
 
+$authenticatedUserId = $userPayload['user_id'];
+$authenticatedUserRole = $userPayload['role'];
+
 
 // --- ENDPOINTS PROTEGIDOS ---
 
@@ -201,38 +204,267 @@ if (!$userPayload) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
 
+    // User Management Endpoints (Admin Only)
+    if ($action === 'create_user' || $action === 'update_user' || $action === 'toggle_user_status') {
+        if ($authenticatedUserRole !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso negado. Apenas administradores podem gerenciar usuarios.']);
+            exit;
+        }
+    }
+
+    if ($action === 'create_user') {
+        $name = $input['name'] ?? '';
+        $email = $input['email'] ?? '';
+        $password = $input['password'] ?? '';
+        $role = $input['role'] ?? 'common';
+        $active = $input['active'] ?? true;
+
+        if (empty($name) || empty($email) || empty($password)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Nome, e-mail e senha são obrigatórios para criar um usuário.']);
+            exit;
+        }
+        
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de e-mail inválido.']);
+            exit;
+        }
+
+        if ($orm->getBy('users', 'email', $email)) {
+            http_response_code(409); // Conflict
+            echo json_encode(['error' => 'E-mail já cadastrado.']);
+            exit;
+        }
+
+        $newUser = $orm->insert('users', [
+            'name' => $name,
+            'email' => $email,
+            'password_hash' => password_hash($password, PASSWORD_BCRYPT),
+            'role' => $role,
+            'active' => $active,
+            'date_of_birth' => $dateOfBirth,
+            'phone_number' => $phoneNumber,
+            'gender' => $gender,
+            'profile_picture_url' => $profilePictureUrl,
+            'bio' => $bio
+        ]);
+        echo json_encode(['success' => true, 'user' => $newUser]);
+        exit;
+    }
+
+    if ($action === 'update_user') {
+        $userId = $input['id'] ?? null;
+        if (!$userId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do usuário é obrigatório para atualização.']);
+            exit;
+        }
+        unset($input['id']); // Don't update the ID
+
+        // If password is being updated, hash it
+        if (isset($input['password']) && !empty($input['password'])) {
+            $input['password_hash'] = password_hash($input['password'], PASSWORD_BCRYPT);
+            unset($input['password']);
+        } else {
+            unset($input['password']); // Remove empty password to avoid hashing empty string
+        }
+
+        // Ensure email is not updated to an existing one
+        if (isset($input['email'])) {
+            $existingUser = $orm->getBy('users', 'email', $input['email']);
+            if ($existingUser && $existingUser['id'] !== $userId) {
+                http_response_code(409); // Conflict
+                echo json_encode(['error' => 'E-mail já cadastrado para outro usuário.']);
+                exit;
+            }
+        }
+        
+        $updatedUser = $orm->update('users', $userId, $input);
+        if ($updatedUser) {
+            echo json_encode(['success' => true, 'user' => $updatedUser]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao atualizar o usuário.']);
+        }
+        exit;
+    }
+
+    if ($action === 'toggle_user_status') {
+        $userId = $input['id'] ?? null;
+        $activeStatus = $input['active'] ?? null; // Expects a boolean true/false
+
+        if (!$userId || !is_bool($activeStatus)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do usuário e status "active" (booleano) são obrigatórios.']);
+            exit;
+        }
+
+        $updatedUser = $orm->update('users', $userId, ['active' => $activeStatus]);
+        if ($updatedUser) {
+            echo json_encode(['success' => true, 'user' => $updatedUser]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao alterar o status do usuário.']);
+        }
+        exit;
+    }
+
     if ($action === 'add_person') {
-        echo json_encode($orm->insert('people', ['name' => $input['name'] ?? '']));
+        echo json_encode($orm->insert('people', ['name' => $input['name'] ?? ''], $authenticatedUserId));
         exit;
     }
 
     if ($action === 'add_project') {
-        echo json_encode($orm->insert('projects', ['name' => $input['name'] ?? '']));
+        echo json_encode($orm->insert('projects', ['name' => $input['name'] ?? ''], $authenticatedUserId));
         exit;
     }
 
     if ($action === 'save_register') {
-        echo json_encode($orm->insert('registers', $input));
+        echo json_encode($orm->insert('registers', $input, $authenticatedUserId));
+        exit;
+    }
+
+    if ($action === 'update_register') {
+        $recordId = $input['id'] ?? null;
+        if (!$recordId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do registro e obrigatorio para atualizacao.']);
+            exit;
+        }
+        unset($input['id']); // Remove ID from data to be updated
+
+        $updatedRecord = $orm->update('registers', $recordId, $input, $authenticatedUserId);
+        if ($updatedRecord) {
+            echo json_encode(['success' => true, 'record' => $updatedRecord]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao atualizar o registro.']);
+        }
+        exit;
+    }
+
+    if ($action === 'delete_register') {
+        $recordId = $input['id'] ?? null;
+        if (!$recordId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do registro e obrigatorio para exclusao.']);
+            exit;
+        }
+
+        if ($orm->delete('registers', 'id', $recordId, $authenticatedUserId)) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao excluir o registro.']);
+        }
+        exit;
+    }
+    
+    // User Profile Management
+    if ($action === 'update_my_profile') {
+        unset($input['id']); // User cannot change their own ID
+        unset($input['email']); // Email should not be changed via this endpoint
+        unset($input['role']); // Role cannot be changed by user
+        unset($input['active']); // Active status cannot be changed by user
+
+        $updatedUser = $orm->update('users', $authenticatedUserId, $input);
+        if ($updatedUser) {
+            // Remove sensitive data before sending to frontend
+            unset($updatedUser['password_hash']);
+            echo json_encode(['success' => true, 'user' => $updatedUser]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao atualizar o perfil.']);
+        }
+        exit;
+    }
+
+    if ($action === 'change_my_password') {
+        $oldPassword = $input['old_password'] ?? '';
+        $newPassword = $input['new_password'] ?? '';
+        $confirmPassword = $input['confirm_password'] ?? '';
+
+        if (empty($oldPassword) || empty($newPassword) || empty($confirmPassword)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Todos os campos de senha são obrigatórios.']);
+            exit;
+        }
+
+        if ($newPassword !== $confirmPassword) {
+            http_response_code(400);
+            echo json_encode(['error' => 'A nova senha e a confirmação não coincidem.']);
+            exit;
+        }
+        
+        // Fetch current user to verify old password
+        $currentUser = $orm->getBy('users', 'id', $authenticatedUserId);
+        if (!$currentUser || !password_verify($oldPassword, $currentUser['password_hash'])) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Senha antiga incorreta.']);
+            exit;
+        }
+
+        $hashedPassword = password_hash($newPassword, PASSWORD_BCRYPT);
+        $updatedUser = $orm->update('users', $authenticatedUserId, ['password_hash' => $hashedPassword]);
+        if ($updatedUser) {
+            echo json_encode(['success' => true]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao alterar a senha.']);
+        }
         exit;
     }
 }
 
 // API Routes (GET)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // User Management Endpoint (Admin Only)
+    if ($action === 'get_users') {
+        if ($authenticatedUserRole !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['error' => 'Acesso negado. Apenas administradores podem visualizar usuarios.']);
+            exit;
+        }
+        // Fetch all users without user_id filter
+        $allUsers = $orm->getAll('users');
+        // Remove sensitive data before sending to frontend
+        $sanitizedUsers = array_map(function($user) {
+            unset($user['password_hash']);
+            return $user;
+        }, $allUsers);
+        echo json_encode($sanitizedUsers); 
+        exit;
+    }
+
+    if ($action === 'get_my_profile') {
+        $userProfile = $orm->getBy('users', 'id', $authenticatedUserId);
+        if ($userProfile) {
+            // Remove sensitive data before sending to frontend
+            unset($userProfile['password_hash']);
+            echo json_encode(['success' => true, 'user' => $userProfile]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Perfil de usuário não encontrado.']);
+        }
+        exit;
+    }
+
     if ($action === 'get_people') {
-        echo json_encode($orm->getAll('people'));
+        echo json_encode($orm->getAll('people', $authenticatedUserId));
         exit;
     }
     if ($action === 'get_projects') {
-        echo json_encode($orm->getAll('projects'));
+        echo json_encode($orm->getAll('projects', $authenticatedUserId));
         exit;
     }
     if ($action === 'search') {
-        echo json_encode(array_values($orm->search('registers', $_GET['term'] ?? '')));
+        echo json_encode(array_values($orm->search('registers', $_GET['term'] ?? '', $authenticatedUserId)));
         exit;
     }
     if ($action === 'get_registers') {
-        echo json_encode($orm->getAll('registers'));
+        echo json_encode($orm->getAll('registers', $authenticatedUserId));
         exit;
     }
 }
