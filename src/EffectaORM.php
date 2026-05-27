@@ -116,4 +116,83 @@ class EffectaORM
             return false;
         });
     }
+
+    public function getBy($table, $column, $value)
+    {
+        if ($this->storageType === 'json') {
+            $all = $this->getAll($table);
+            foreach ($all as $item) {
+                if (isset($item[$column]) && (string)$item[$column] === (string)$value) {
+                    return $item;
+                }
+            }
+            return null;
+        } elseif ($this->storageType === 'mysql') {
+            $sql = "SELECT * FROM `{$table}` WHERE `{$column}` = ? LIMIT 1";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$value]);
+            return $stmt->fetch() ?: null;
+        }
+        return null;
+    }
+
+    public function update($table, $id, $data)
+    {
+        // Converte strings vazias para null para evitar erros de tipo no MySQL
+        foreach ($data as $key => $value) {
+            if ($value === '') {
+                $data[$key] = null;
+            }
+        }
+
+        if ($this->storageType === 'json') {
+            $file = $this->getFile($table);
+            $all = $this->getAll($table);
+            $updated = false;
+            foreach ($all as $index => $item) {
+                if (isset($item['id']) && $item['id'] === $id) {
+                    $all[$index] = array_merge($item, $data);
+                    $updated = true;
+                    break;
+                }
+            }
+            if ($updated) {
+                file_put_contents($file, json_encode($all, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            }
+            return $this->getBy($table, 'id', $id);
+        } elseif ($this->storageType === 'mysql') {
+            $sets = [];
+            $params = [];
+            foreach ($data as $key => $val) {
+                $sets[] = "`{$key}` = ?";
+                $params[] = $val;
+            }
+            $params[] = $id;
+            
+            $sql = "UPDATE `{$table}` SET " . implode(', ', $sets) . " WHERE `id` = ?";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $this->getBy($table, 'id', $id);
+        }
+        return null;
+    }
+
+    public function delete($table, $column, $value)
+    {
+        if ($this->storageType === 'json') {
+            $file = $this->getFile($table);
+            $all = $this->getAll($table);
+            $filtered = array_filter($all, function($item) use ($column, $value) {
+                return !isset($item[$column]) || (string)$item[$column] !== (string)$value;
+            });
+            file_put_contents($file, json_encode(array_values($filtered), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            return true;
+        } elseif ($this->storageType === 'mysql') {
+            $sql = "DELETE FROM `{$table}` WHERE `{$column}` = ?";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$value]);
+            return true;
+        }
+        return false;
+    }
 }
