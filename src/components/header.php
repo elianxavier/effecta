@@ -50,18 +50,15 @@ if (isset($_COOKIE['access_token'])) {
 
 <script>
 async function handleLogout() {
-    const refreshToken = localStorage.getItem("refresh_token");
     try {
         await fetch("api/index.php?action=logout", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken })
+            headers: { "Content-Type": "application/json" }
         });
     } catch (err) {}
     
     // Limpa tokens
     localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_role");
     
