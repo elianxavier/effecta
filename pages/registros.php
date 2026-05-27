@@ -104,12 +104,12 @@ include_once dirname(__DIR__) . '/src/components/head.php';
                         </div>
 
                         <div id="inputHorasContainer" class="w-full">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Planejado (Ex: 6:40) *</label>
-                            <input type="text" name="horas_trabalhadas" placeholder="6:40" class="w-full form-input" required>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Planejado (Ex: 6:40)</label>
+                            <input type="text" name="horas_trabalhadas" placeholder="6:40" class="w-full form-input">
                         </div>
 
                         <div id="inputDataContainer" class="hidden w-full">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Prazo Planejado *</label>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Prazo Planejado</label>
                             <input type="date" name="prazo" class="w-full form-input">
                         </div>
 
@@ -126,10 +126,6 @@ include_once dirname(__DIR__) . '/src/components/head.php';
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Meta</label>
                             <input type="text" name="meta" class="w-full form-input">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">O que fiz</label>
-                            <textarea name="o_que_fiz" rows="2" class="w-full form-input"></textarea>
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contribuição relevante</label>
