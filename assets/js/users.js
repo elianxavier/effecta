@@ -117,7 +117,7 @@ window.openUserModal = function (mode, userId = null) {
         userForm.querySelector('#userBio').value = '';
     } else if (mode === 'edit' && userId) {
         userModalTitle.textContent = "Editar Usuário";
-        const user = window.usersData.find(u => u.id === userId);
+        const user = window.usersData.find(u => String(u.id) === String(userId));
         if (user) {
             userForm.querySelector('#userIdHidden').value = user.id;
             userForm.querySelector('#userName').value = user.name;

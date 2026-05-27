@@ -91,7 +91,6 @@ class EffectaORM
     public function insert($table, $data, $authenticatedUserId = null)
     {
         $table = $this->validateTableName($table);
-        $data['id'] = uniqid();
         $data['created_at'] = date('Y-m-d H:i:s');
 
         // Automatically add user_id for user-scoped tables if provided
@@ -105,6 +104,7 @@ class EffectaORM
         // Converte strings vazias para null para evitar erros de tipo no MySQL
         foreach ($data as $key => $value) {
             $this->validateColumnName($key); // Validate column names
+
             if ($value === '') {
                 $data[$key] = null;
             }
@@ -113,8 +113,19 @@ class EffectaORM
         if ($this->storageType === 'json') {
             $file = $this->getFile($table);
             $content = json_decode(file_get_contents($file), true) ?: [];
+
+            // Simple numeric auto-increment for JSON
+            $maxId = 0;
+            foreach ($content as $item) {
+                if (isset($item['id']) && is_numeric($item['id'])) {
+                    $maxId = max($maxId, (int)$item['id']);
+                }
+            }
+            $data['id'] = $maxId + 1;
+
             $content[] = $data;
             file_put_contents($file, json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            return $data;
         } elseif ($this->storageType === 'mysql') {
             $columns = implode(', ', array_map(function ($col) {
                 return "`{$col}`";
@@ -125,6 +136,9 @@ class EffectaORM
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute(array_values($data));
+
+            $lastId = $this->pdo->lastInsertId();
+            return $this->getBy($table, 'id', $lastId);
         }
 
         return $data;
@@ -134,13 +148,51 @@ class EffectaORM
     {
         $table = $this->validateTableName($table);
         if ($this->storageType === 'json') {
+            $file = $this->getFile($table);
+            $content = json_decode(file_get_contents($file), true) ?: [];
+
             // Apply authenticated user ID filter if table is user-scoped
             if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
-                return $this->findWhereJson($table, [], $authenticatedUserId);
+                $content = array_filter($content, function ($item) use ($authenticatedUserId) {
+                    return isset($item['user_id']) && (int)$item['user_id'] === (int)$authenticatedUserId;
+                });
             }
-            $file = $this->getFile($table);
-            return json_decode(file_get_contents($file), true) ?: [];
+
+            // If table is registers, enrich with project and person names
+            if ($table === 'registers') {
+                $projects = $this->getAll('projects', $authenticatedUserId);
+                $people = $this->getAll('people', $authenticatedUserId);
+
+                $projectMap = [];
+                foreach ($projects as $p) $projectMap[$p['id']] = $p['name'];
+
+                $peopleMap = [];
+                foreach ($people as $p) $peopleMap[$p['id']] = $p['name'];
+
+                $content = array_map(function ($item) use ($projectMap, $peopleMap) {
+                    $item['projeto_name'] = $projectMap[$item['projeto_id']] ?? 'Projeto Removido';
+                    $item['pessoa_feedback_name'] = $peopleMap[$item['pessoa_feedback_id']] ?? 'Nenhum';
+                    return $item;
+                }, $content);
+            }
+
+            return array_values($content);
         } elseif ($this->storageType === 'mysql') {
+            if ($table === 'registers') {
+                $sql = "SELECT r.*, p.name as projeto_name, pe.name as pessoa_feedback_name 
+                        FROM `registers` r
+                        LEFT JOIN `projects` p ON r.projeto_id = p.id
+                        LEFT JOIN `people` pe ON r.pessoa_feedback_id = pe.id";
+                $params = [];
+                if ($authenticatedUserId !== null) {
+                    $sql .= " WHERE r.`user_id` = ?";
+                    $params[] = $authenticatedUserId;
+                }
+                $stmt = $this->pdo->prepare($sql);
+                $stmt->execute($params);
+                return $stmt->fetchAll();
+            }
+
             $sql = "SELECT * FROM `{$table}`";
             $params = [];
             if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {

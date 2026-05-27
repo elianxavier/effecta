@@ -23,6 +23,7 @@ if (isset($_COOKIE['access_token'])) {
                 <nav class="hidden md:flex space-x-8">
                     <a href="index.php?page=registros" class="<?= ($currentPage === 'registros') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Registros</a>
                     <a href="index.php?page=import_export" class="<?= ($currentPage === 'import_export') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Importar/Exportar</a>
+                    <a href="index.php?page=management" class="<?= ($currentPage === 'management') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciar Entidades</a>
                     <?php if (isset($payload['role']) && $payload['role'] === 'admin'): ?>
                         <a href="index.php?page=users" class="<?= ($currentPage === 'users') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciamento de Usuários</a>
                     <?php endif; ?>
@@ -31,12 +32,12 @@ if (isset($_COOKIE['access_token'])) {
             </div>
             <div class="flex items-center gap-4">
                 <span class="hidden sm:inline text-xs font-semibold text-slate-500 dark:text-slate-400">Olá, <strong class="text-slate-700 dark:text-slate-200"><?= htmlspecialchars($userName) ?></strong></span>
-                
+
                 <button id="themeToggle" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400" title="Alternar Tema">
                     <i class="fa-solid fa-moon text-lg dark:hidden"></i>
                     <i class="fa-solid fa-sun text-lg hidden dark:block"></i>
                 </button>
-                
+
                 <div class="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center text-primary dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-700" title="<?= htmlspecialchars($userName) ?>">
                     <?= htmlspecialchars($userInitials) ?>
                 </div>
@@ -50,23 +51,25 @@ if (isset($_COOKIE['access_token'])) {
 </header>
 
 <script>
-async function handleLogout() {
-    try {
-        await fetch("api/index.php?action=logout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" }
-        });
-    } catch (err) {}
-    
-    // Limpa tokens
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("user_name");
-    localStorage.removeItem("user_role");
-    
-    // Deleta cookie
-    document.cookie = "access_token=; max-age=0; path=/";
-    
-    // Redireciona
-    window.location.href = "index.php?page=login";
-}
+    async function handleLogout() {
+        try {
+            await fetch("api/index.php?action=logout", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+        } catch (err) {}
+
+        // Limpa tokens
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("user_role");
+
+        // Deleta cookie
+        document.cookie = "access_token=; max-age=0; path=/";
+
+        // Redireciona
+        window.location.href = "index.php?page=login";
+    }
 </script>
