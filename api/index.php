@@ -1,7 +1,14 @@
 <?php
 require_once dirname(__DIR__) . '/src/EffectaORM.php';
 
-$orm = new EffectaORM('json');
+$storageType = 'json';
+$configFile = dirname(__DIR__) . '/src/config/database.php';
+if (file_exists($configFile)) {
+    $dbConfig = require $configFile;
+    $storageType = $dbConfig['storage_type'] ?? 'json';
+}
+
+$orm = new EffectaORM($storageType);
 $action = $_GET['action'] ?? '';
 
 // API Response Headers
@@ -21,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($action === 'save_log') {
-        echo json_encode($orm->insert('logs', $input));
+    if ($action === 'save_register') {
+        echo json_encode($orm->insert('registers', $input));
         exit;
     }
 }
@@ -38,11 +45,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
     if ($action === 'search') {
-        echo json_encode(array_values($orm->search('logs', $_GET['term'] ?? '')));
+        echo json_encode(array_values($orm->search('registers', $_GET['term'] ?? '')));
         exit;
     }
-    if ($action === 'get_logs') {
-        echo json_encode($orm->getAll('logs'));
+    if ($action === 'get_registers') {
+        echo json_encode($orm->getAll('registers'));
         exit;
     }
 }
