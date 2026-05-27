@@ -1,5 +1,7 @@
 const EffectaAPI = {
   baseUrl: "api/index.php",
+  isRefreshing: false,
+  refreshQueue: [],
 
   async request(url, options = {}) {
     options.headers = options.headers || {};
@@ -14,16 +16,57 @@ const EffectaAPI = {
 
     // Se retornar 401 (Não Autorizado), tenta renovar o Access Token usando o Refresh Token
     if (res.status === 401) {
+      if (this.isRefreshing) {
+        return new Promise((resolve, reject) => {
+          this.refreshQueue.push({
+            resolve: async (newAccessToken) => {
+              options.headers["Authorization"] = `Bearer ${newAccessToken}`;
+              try {
+                const retryRes = await fetch(url, options);
+                if (!retryRes.ok) {
+                  const errData = await retryRes.json().catch(() => ({}));
+                  reject(new Error(errData.error || `Erro de HTTP: ${retryRes.status}`));
+                } else {
+                  resolve(await retryRes.json());
+                }
+              } catch (err) {
+                reject(err);
+              }
+            },
+            reject: (err) => {
+              reject(err);
+            }
+          });
+        });
+      }
+
+      this.isRefreshing = true;
+
       const refreshed = await this.refreshToken();
       if (refreshed) {
-        // Refaz a chamada com o novo token de acesso
-        accessToken = localStorage.getItem("access_token");
-        options.headers["Authorization"] = `Bearer ${accessToken}`;
+        this.isRefreshing = false;
+        const newAccessToken = localStorage.getItem("access_token");
+        
+        // Resolve a fila de requisições pendentes
+        const currentQueue = [...this.refreshQueue];
+        this.refreshQueue = [];
+        currentQueue.forEach(item => item.resolve(newAccessToken));
+
+        // Refaz a chamada original com o novo token de acesso
+        options.headers["Authorization"] = `Bearer ${newAccessToken}`;
         res = await fetch(url, options);
       } else {
+        this.isRefreshing = false;
+        
+        // Rejeita a fila de requisições pendentes
+        const error = new Error("Sessao expirada. Por favor, faca login novamente.");
+        const currentQueue = [...this.refreshQueue];
+        this.refreshQueue = [];
+        currentQueue.forEach(item => item.reject(error));
+
         // Se falhar o refresh (token expirou ou revogado), desloga
         this.clearSessionAndRedirect();
-        throw new Error("Sessao expirada. Por favor, faca login novamente.");
+        throw error;
       }
     }
 
@@ -36,14 +79,10 @@ const EffectaAPI = {
   },
 
   async refreshToken() {
-    const refreshToken = localStorage.getItem("refresh_token");
-    if (!refreshToken) return false;
-
     try {
       const res = await fetch(`${this.baseUrl}?action=refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: refreshToken })
+        headers: { "Content-Type": "application/json" }
       });
 
       if (!res.ok) return false;
@@ -52,7 +91,6 @@ const EffectaAPI = {
       
       // Armazena a nova sessão rotacionada
       localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
       localStorage.setItem("user_name", data.user.name);
       localStorage.setItem("user_role", data.user.role);
 
@@ -66,7 +104,6 @@ const EffectaAPI = {
 
   clearSessionAndRedirect() {
     localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_role");
     

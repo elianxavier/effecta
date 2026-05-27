@@ -2,6 +2,7 @@
 require_once dirname(__DIR__) . '/src/config/env.php';
 require_once dirname(__DIR__) . '/src/EffectaORM.php';
 require_once dirname(__DIR__) . '/src/helpers/SimpleJWT.php';
+require_once dirname(__DIR__) . '/src/helpers/auth.php';
 
 $storageType = 'json';
 $configFile = dirname(__DIR__) . '/src/config/database.php';
@@ -46,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
 // Refresh Token (Renovação de Sessão)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'refresh') {
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
-    $refreshToken = $input['refresh_token'] ?? '';
+    $refreshToken = $input['refresh_token'] ?? $_COOKIE['refresh_token'] ?? '';
 
     if (empty($refreshToken)) {
         http_response_code(400);
@@ -91,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'refresh') {
 // Logout (Revogação de Sessão específica)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'logout') {
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
-    $refreshToken = $input['refresh_token'] ?? '';
+    $refreshToken = $input['refresh_token'] ?? $_COOKIE['refresh_token'] ?? '';
 
     if (!empty($refreshToken)) {
         $payload = SimpleJWT::decode($refreshToken);
@@ -99,6 +100,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'logout') {
             $orm->delete('user_sessions', 'id', $payload['jti']);
         }
     }
+
+    // Limpa cookies
+    setcookie('access_token', '', [
+        'expires' => 1,
+        'path' => '/',
+        'httponly' => false,
+        'samesite' => 'Lax'
+    ]);
+    setcookie('refresh_token', '', [
+        'expires' => 1,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
 
     echo json_encode(['success' => true]);
     exit;
@@ -487,43 +502,4 @@ echo json_encode(['error' => 'Acao ou metodo de API invalido.']);
 exit;
 
 
-// --- FUNÇÃO AUXILIAR DE TOKENS ---
-function generateTokensAndSession($orm, $user)
-{
-    $jti = uniqid();
-    $now = time();
-
-    // Access Token (15 minutos)
-    $accessToken = SimpleJWT::encode([
-        'user_id' => $user['id'],
-        'name' => $user['name'],
-        'role' => $user['role'],
-        'exp' => $now + (15 * 60)
-    ]);
-
-    // Refresh Token (7 dias)
-    $refreshToken = SimpleJWT::encode([
-        'jti' => $jti,
-        'user_id' => $user['id'],
-        'exp' => $now + (7 * 24 * 60 * 60)
-    ]);
-
-    // Grava Sessão no Banco
-    $orm->insert('user_sessions', [
-        'id' => $jti,
-        'user_id' => $user['id'],
-        'refresh_token' => $refreshToken,
-        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? '',
-        'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
-        'expires_at' => date('Y-m-d H:i:s', $now + (7 * 24 * 60 * 60))
-    ]);
-
-    return [
-        'access_token' => $accessToken,
-        'refresh_token' => $refreshToken,
-        'user' => [
-            'name' => $user['name'],
-            'role' => $user['role']
-        ]
-    ];
-}
+// --- FUNÇÃO AUXILIAR DE TOKENS REMOVIDA (UTILIZA SRC/HELPERS/AUTH.PHP) ---

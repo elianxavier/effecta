@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('America/Sao_Paulo');
 
 // src/config/env.php
 if (!function_exists('loadEnv')) {
