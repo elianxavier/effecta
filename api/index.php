@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'google_login') {
 
     // Valida Token com API do Google
     $verifyUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" . urlencode($idToken);
-    
+
     // Configura tempo limite no request HTTP
     $opts = [
         'http' => [
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'google_login') {
     ];
     $context = stream_context_create($opts);
     $response = @file_get_contents($verifyUrl, false, $context);
-    
+
     if (!$response) {
         http_response_code(401);
         echo json_encode(['error' => 'Falha ao autenticar token junto ao Google.']);
@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'google_login') {
         echo json_encode(['error' => 'ID Token do Google invalido para este aplicativo.']);
         exit;
     }
-    
+
     if (empty($email)) {
         http_response_code(400);
         echo json_encode(['error' => 'ID token do Google nao possui e-mail.']);
@@ -219,13 +219,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password = $input['password'] ?? '';
         $role = $input['role'] ?? 'common';
         $active = $input['active'] ?? true;
+        $dateOfBirth = $input['date_of_birth'] ?? null;
+        $phoneNumber = $input['phone_number'] ?? null;
+        $gender = $input['gender'] ?? null;
+        $profilePictureUrl = $input['profile_picture_url'] ?? null;
+        $bio = $input['bio'] ?? null;
 
         if (empty($name) || empty($email) || empty($password)) {
             http_response_code(400);
             echo json_encode(['error' => 'Nome, e-mail e senha são obrigatórios para criar um usuário.']);
             exit;
         }
-        
+
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             http_response_code(400);
             echo json_encode(['error' => 'Formato de e-mail inválido.']);
@@ -250,6 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'profile_picture_url' => $profilePictureUrl,
             'bio' => $bio
         ]);
+
         echo json_encode(['success' => true, 'user' => $newUser]);
         exit;
     }
@@ -258,30 +264,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $userId = $input['id'] ?? null;
         if (!$userId) {
             http_response_code(400);
-            echo json_encode(['error' => 'ID do usuário é obrigatório para atualização.']);
+            echo json_encode(['error' => 'ID do usuário é obrigatório.']);
             exit;
         }
-        unset($input['id']); // Don't update the ID
 
-        // If password is being updated, hash it
-        if (isset($input['password']) && !empty($input['password'])) {
-            $input['password_hash'] = password_hash($input['password'], PASSWORD_BCRYPT);
-            unset($input['password']);
-        } else {
-            unset($input['password']); // Remove empty password to avoid hashing empty string
+        // Filtra apenas o que é permitido atualizar
+        $allowedFields = ['name', 'email', 'role', 'date_of_birth', 'phone_number', 'gender', 'profile_picture_url', 'bio'];
+        $dataToUpdate = array_intersect_key($input, array_flip($allowedFields));
+
+        // Tratamento especial para o checkbox
+        if (isset($input['active'])) {
+            $dataToUpdate['active'] = $input['active'] ? 1 : 0;
         }
 
-        // Ensure email is not updated to an existing one
-        if (isset($input['email'])) {
-            $existingUser = $orm->getBy('users', 'email', $input['email']);
-            if ($existingUser && $existingUser['id'] !== $userId) {
-                http_response_code(409); // Conflict
+        // Se senha foi enviada, hasheia e adiciona
+        if (!empty($input['password'])) {
+            $dataToUpdate['password_hash'] = password_hash($input['password'], PASSWORD_BCRYPT);
+        }
+
+        // Validação de e-mail único
+        if (isset($dataToUpdate['email'])) {
+            $existingUser = $orm->getBy('users', 'email', $dataToUpdate['email']);
+            if ($existingUser && (int)$existingUser['id'] !== (int)$userId) {
+                http_response_code(409);
                 echo json_encode(['error' => 'E-mail já cadastrado para outro usuário.']);
                 exit;
             }
         }
-        
-        $updatedUser = $orm->update('users', $userId, $input);
+
+        $updatedUser = $orm->update('users', $userId, $dataToUpdate);
+
         if ($updatedUser) {
             echo json_encode(['success' => true, 'user' => $updatedUser]);
         } else {
@@ -361,7 +373,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-    
+
     // User Profile Management
     if ($action === 'update_my_profile') {
         unset($input['id']); // User cannot change their own ID
@@ -397,7 +409,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['error' => 'A nova senha e a confirmação não coincidem.']);
             exit;
         }
-        
+
         // Fetch current user to verify old password
         $currentUser = $orm->getBy('users', 'id', $authenticatedUserId);
         if (!$currentUser || !password_verify($oldPassword, $currentUser['password_hash'])) {
@@ -430,11 +442,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Fetch all users without user_id filter
         $allUsers = $orm->getAll('users');
         // Remove sensitive data before sending to frontend
-        $sanitizedUsers = array_map(function($user) {
+        $sanitizedUsers = array_map(function ($user) {
             unset($user['password_hash']);
             return $user;
         }, $allUsers);
-        echo json_encode($sanitizedUsers); 
+        echo json_encode($sanitizedUsers);
         exit;
     }
 
@@ -476,10 +488,11 @@ exit;
 
 
 // --- FUNÇÃO AUXILIAR DE TOKENS ---
-function generateTokensAndSession($orm, $user) {
+function generateTokensAndSession($orm, $user)
+{
     $jti = uniqid();
     $now = time();
-    
+
     // Access Token (15 minutos)
     $accessToken = SimpleJWT::encode([
         'user_id' => $user['id'],
