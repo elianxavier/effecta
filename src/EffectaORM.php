@@ -5,7 +5,7 @@ class EffectaORM
     private $baseDir;
     private $pdo;
 
-    private $allowedTables = ['people', 'projects', 'registers', 'users', 'user_sessions'];
+    private $allowedTables = ['people', 'projects', 'registers', 'users', 'user_sessions', 'feedbacks', 'feedback_likes', 'feedback_reports'];
 
     public function __construct($storageType = 'json')
     {
@@ -63,8 +63,8 @@ class EffectaORM
 
         return array_filter($content, function ($item) use ($conditions, $authenticatedUserId, $table) {
             // Apply authenticated user ID filter if table is user-scoped
-            if (in_array($table, ['people', 'projects', 'registers'])) {
-                if ($authenticatedUserId !== null && (!isset($item['user_id']) || $item['user_id'] !== $authenticatedUserId)) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports'])) {
+                if ($authenticatedUserId !== null && (!isset($item['user_id']) || (int)$item['user_id'] !== (int)$authenticatedUserId)) {
                     return false;
                 }
             }
@@ -94,7 +94,7 @@ class EffectaORM
         $data['created_at'] = date('Y-m-d H:i:s');
 
         // Automatically add user_id for user-scoped tables if provided
-        if (in_array($table, ['people', 'projects', 'registers'])) {
+        if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports'])) {
             if ($authenticatedUserId === null) {
                 throw new Exception("Authenticated user ID is required for table '{$table}'.");
             }
@@ -152,7 +152,7 @@ class EffectaORM
             $content = json_decode(file_get_contents($file), true) ?: [];
 
             // Apply authenticated user ID filter if table is user-scoped
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $content = array_filter($content, function ($item) use ($authenticatedUserId) {
                     return isset($item['user_id']) && (int)$item['user_id'] === (int)$authenticatedUserId;
                 });
@@ -195,7 +195,7 @@ class EffectaORM
 
             $sql = "SELECT * FROM `{$table}`";
             $params = [];
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $sql .= " WHERE `user_id` = ?";
                 $params[] = $authenticatedUserId;
             }
@@ -220,7 +220,7 @@ class EffectaORM
             $conditions = [];
             $params = [];
 
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $conditions[] = "`user_id` = ?";
                 $params[] = $authenticatedUserId;
             }
@@ -238,7 +238,7 @@ class EffectaORM
             $sqlConditions = [];
             $sqlParams = [];
 
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $sqlConditions[] = "`user_id` = ?";
                 $sqlParams[] = $authenticatedUserId;
             }
@@ -291,7 +291,7 @@ class EffectaORM
             $sql = "SELECT * FROM `{$table}` WHERE `{$column}` = ?";
             $params = [$value];
 
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $sql .= " AND `user_id` = ?";
                 $params[] = $authenticatedUserId;
             }
@@ -321,7 +321,7 @@ class EffectaORM
             foreach ($all as $index => $item) {
                 if (isset($item['id']) && $item['id'] === $id) {
                     // Check user_id for user-scoped tables
-                    if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null && (!isset($item['user_id']) || $item['user_id'] !== $authenticatedUserId)) {
+                    if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null && (!isset($item['user_id']) || (int)$item['user_id'] !== (int)$authenticatedUserId)) {
                         continue; // Skip if not owned by authenticated user
                     }
                     $all[$index] = array_merge($item, $data);
@@ -355,7 +355,7 @@ class EffectaORM
             $sql = "UPDATE `{$table}` SET " . implode(', ', $sets) . " WHERE `id` = ?";
             $params[] = $id;
 
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $sql .= " AND `user_id` = ?";
                 $params[] = $authenticatedUserId;
             }
@@ -376,7 +376,7 @@ class EffectaORM
             $all = $this->getAll($table);
             $filtered = array_filter($all, function ($item) use ($column, $value, $authenticatedUserId, $table) {
                 // Check user_id for user-scoped tables
-                if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null && (!isset($item['user_id']) || $item['user_id'] !== $authenticatedUserId)) {
+                if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null && (!isset($item['user_id']) || (int)$item['user_id'] !== (int)$authenticatedUserId)) {
                     return true; // Keep if not owned by authenticated user
                 }
                 return !isset($item[$column]) || (string)$item[$column] !== (string)$value;
@@ -392,7 +392,7 @@ class EffectaORM
             $sql = "DELETE FROM `{$table}` WHERE `{$column}` = ?";
             $params = [$value];
 
-            if (in_array($table, ['people', 'projects', 'registers']) && $authenticatedUserId !== null) {
+            if (in_array($table, ['people', 'projects', 'registers', 'feedbacks', 'feedback_likes', 'feedback_reports']) && $authenticatedUserId !== null) {
                 $sql .= " AND `user_id` = ?";
                 $params[] = $authenticatedUserId;
             }

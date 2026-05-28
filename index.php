@@ -75,9 +75,15 @@ if (in_array($page, $publicPages)) {
     }
 
     // Role-based Access Control (Exemplo de página de admin)
-    if ($page === 'users' && $userRole !== 'admin') {
+    if ($page === 'users' && !in_array($userRole, ['admin', 'dev'])) {
         http_response_code(403);
         echo "Acesso Negado (403). Apenas administradores possuem acesso a esta pagina.";
+        exit;
+    }
+    
+    if ($page === 'feedback_management' && $userRole !== 'dev') {
+        http_response_code(403);
+        echo "Acesso Negado (403). Apenas desenvolvedores possuem acesso a esta pagina.";
         exit;
     }
 }
