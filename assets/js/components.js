@@ -289,3 +289,84 @@ function showToast(message, type = 'info') {
     }, 300);
   }, 4000);
 }
+
+/**
+ * Sistema de Modal de Confirmação Moderno
+ * @param {string} title Título do modal
+ * @param {string} message Mensagem de corpo
+ * @param {string} type Tipo visual (danger, warning, info)
+ * @returns {Promise<boolean>}
+ */
+function showConfirm(title, message, type = 'danger') {
+  return new Promise((resolve) => {
+    // Container do Modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200';
+    
+    let icon = 'fa-triangle-exclamation';
+    let iconColor = 'text-amber-500 bg-amber-50 dark:bg-amber-900/30';
+    let btnColor = 'bg-indigo-600 hover:bg-indigo-700';
+
+    if (type === 'danger') {
+      icon = 'fa-trash-can';
+      iconColor = 'text-red-600 bg-red-50 dark:bg-red-900/30';
+      btnColor = 'bg-red-600 hover:bg-red-700 shadow-red-200 dark:shadow-none';
+    }
+
+    modal.innerHTML = `
+      <div class="bg-white dark:bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transform transition-all scale-95 opacity-0 duration-300 ease-out" id="confirm-box">
+        <div class="p-6">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center text-xl ${iconColor}">
+              <i class="fa-solid ${icon}"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">${title}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-widest font-semibold">Confirmação Necessária</p>
+            </div>
+          </div>
+          
+          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">${message}</p>
+        </div>
+        
+        <div class="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700">
+          <button id="confirm-cancel" class="flex-1 px-4 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors">
+            Cancelar
+          </button>
+          <button id="confirm-ok" class="flex-1 px-4 py-2.5 text-sm font-bold text-white ${btnColor} rounded-xl transition-all shadow-lg">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+
+    const box = modal.querySelector('#confirm-box');
+    setTimeout(() => {
+      box.classList.remove('scale-95', 'opacity-0');
+      box.classList.add('scale-100', 'opacity-100');
+    }, 10);
+
+    const cleanup = (result) => {
+      box.classList.remove('scale-100', 'opacity-100');
+      box.classList.add('scale-95', 'opacity-0');
+      modal.classList.add('opacity-0');
+      
+      setTimeout(() => {
+        modal.remove();
+        document.body.style.overflow = '';
+        resolve(result);
+      }, 200);
+    };
+
+    modal.querySelector('#confirm-ok').onclick = () => cleanup(true);
+    modal.querySelector('#confirm-cancel').onclick = () => cleanup(false);
+    
+    // Close on backdrop click
+    modal.onclick = (e) => {
+      if (e.target === modal) cleanup(false);
+    };
+  });
+}

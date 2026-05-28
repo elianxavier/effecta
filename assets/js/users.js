@@ -185,9 +185,13 @@ window.closeUserModal = function () {
 
 window.toggleUserStatus = async function (userId, currentStatus) {
     const action = currentStatus ? "desativar" : "ativar";
-    if (!confirm(`Tem certeza que deseja ${action} este usuário?`)) {
-        return;
-    }
+    const confirmed = await showConfirm(
+        `${action.charAt(0).toUpperCase() + action.slice(1)} Usuário?`,
+        `Tem certeza que deseja ${action} este usuário? Ele perderá o acesso ao sistema imediatamente.`,
+        currentStatus ? 'danger' : 'warning'
+    );
+
+    if (!confirmed) return;
 
     try {
         await EffectaAPI.toggleUserStatus(userId, !currentStatus);

@@ -163,9 +163,15 @@ window.closeManagementModal = function () {
 
 window.deleteItem = async function (type, id) {
   const typeLabel = type === "projects" ? "este projeto" : "este autor";
-  if (!confirm(`Tem certeza que deseja excluir ${typeLabel}?`)) {
-    return;
-  }
+  const titleLabel = type === "projects" ? "Projeto" : "Autor";
+  
+  const confirmed = await showConfirm(
+    `Excluir ${titleLabel}?`,
+    `Tem certeza que deseja excluir ${typeLabel}? Esta ação removerá o vínculo com todos os registros existentes.`,
+    "danger"
+  );
+
+  if (!confirmed) return;
 
   try {
     if (type === "projects") {
