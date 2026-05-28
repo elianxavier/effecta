@@ -1,4 +1,3 @@
-// Inicialização das variáveis de estado globais
 window.peopleData = [];
 window.projectsData = [];
 window.allRegistersData = [];
@@ -7,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
   loadData();
   loadAuxData();
 
-  // Setup dos seletores de formulários
   setupSmartSelect(
     "autorSelectContainer",
     "autorFeedbackSearch",
@@ -29,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
     "fa-solid fa-folder",
   );
 
-  // Setup dos seletores de filtros
   setupFilterSelect(
     "filterProjetoContainer",
     "filterProjetoSearch",
@@ -51,11 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
     "Todos os Autores",
   );
 
-  // Setup do filtro customizado de status
   setupStatusFilterSelect();
 });
 
-// Carrega os dados assincronamente da API
 async function loadAuxData() {
   window.peopleData = await EffectaAPI.getPeople();
   window.projectsData = await EffectaAPI.getProjects();
@@ -66,7 +61,6 @@ async function loadData() {
   window.applyFilters();
 }
 
-// Helpers de Conversão de Hora
 function timeToDecimal(timeStr) {
   if (!timeStr || !timeStr.includes(":")) return parseFloat(timeStr) || 0;
   const [hours, minutes] = timeStr.split(":").map(Number);
@@ -80,7 +74,6 @@ function decimalToTime(decimal) {
   return `${hours}h ${minutes > 0 ? minutes + "m" : ""}`;
 }
 
-// Alternância de Campos no Modal (Prazo/Horas)
 window.togglePrazoInput = function () {
   const tipo =
     document.querySelector('input[name="tipo_prazo"]:checked')?.value ||
@@ -89,7 +82,9 @@ window.togglePrazoInput = function () {
   const inputData = document.getElementById("inputDataContainer");
 
   const entregaDataContainer = document.getElementById("entregaDataContainer");
-  const entregaHorasContainer = document.getElementById("entregaHorasContainer");
+  const entregaHorasContainer = document.getElementById(
+    "entregaHorasContainer",
+  );
 
   if (!inputHoras) return;
 
@@ -112,7 +107,6 @@ window.togglePrazoInput = function () {
   }
 };
 
-// Handler de Envio do Formulário (Salvar Registro)
 const form = document.getElementById("effectaForm");
 if (form) {
   form.addEventListener("submit", async (e) => {
@@ -129,7 +123,8 @@ if (form) {
 
     const btn = e.target.querySelector('button[type="submit"]');
     const originalContent = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Salvando...';
+    btn.innerHTML =
+      '<i class="fa-solid fa-circle-notch fa-spin"></i> Salvando...';
     btn.disabled = true;
 
     try {
@@ -141,7 +136,7 @@ if (form) {
         await EffectaAPI.saveRegister(data);
         showToast("Registro salvo com sucesso!", "success");
       }
-      
+
       closeModal();
       await loadData();
     } catch (err) {
@@ -154,12 +149,10 @@ if (form) {
   });
 }
 
-// Filtro de Texto
 document.getElementById("searchInput").addEventListener("input", () => {
   window.applyFilters();
 });
 
-// Motor de Filtros
 window.applyFilters = function () {
   const term = document.getElementById("searchInput").value.toLowerCase();
   const projId = document.getElementById("filterProjeto").value;
@@ -169,13 +162,15 @@ window.applyFilters = function () {
   let filtered = window.allRegistersData.filter((item) => {
     let pass = true;
 
-    if (projId && (String(item.projeto_id) !== String(projId))) pass = false;
-    if (autorId && (String(item.pessoa_feedback_id) !== String(autorId))) pass = false;
+    if (projId && String(item.projeto_id) !== String(projId)) pass = false;
+    if (autorId && String(item.pessoa_feedback_id) !== String(autorId))
+      pass = false;
 
     if (status) {
       const itemStatus = getItemStatus(item);
       if (status === "atrasado") {
-        if (itemStatus !== "atrasado" && itemStatus !== "atrasado_pendente") pass = false;
+        if (itemStatus !== "atrasado" && itemStatus !== "atrasado_pendente")
+          pass = false;
       } else {
         if (itemStatus !== status) pass = false;
       }
@@ -201,7 +196,7 @@ window.applyFilters = function () {
   renderData(filtered);
 };
 
-// Renderização dos Cards na Tela
+// INICIO ALTERACAO: Aplicando o visual premium nos cards (bordas arredondadas, hover effects, gradientes sutis)
 function renderData(data) {
   const container = document.getElementById("results");
   if (!container) return;
@@ -209,9 +204,11 @@ function renderData(data) {
 
   if (data.length === 0) {
     container.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center p-12 text-slate-400 dark:text-slate-500">
-                <i class="fa-solid fa-folder-open text-4xl mb-3 opacity-50"></i>
-                <p>Nenhum registro encontrado.</p>
+            <div class="col-span-full flex flex-col items-center justify-center p-16 bg-white/50 dark:bg-slate-800/30 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 backdrop-blur-sm">
+                <div class="w-20 h-20 bg-slate-100 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                    <i class="fa-solid fa-folder-open text-3xl text-slate-400 dark:text-slate-500"></i>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 font-medium">Nenhum registro encontrado.</p>
             </div>`;
     return;
   }
@@ -227,7 +224,9 @@ function renderData(data) {
       return "pendente";
     } else {
       if (item.horas_gastas && item.horas_trabalhadas) {
-        return Number(item.horas_gastas) <= Number(item.horas_trabalhadas) ? "no_prazo" : "atrasado";
+        return Number(item.horas_gastas) <= Number(item.horas_trabalhadas)
+          ? "no_prazo"
+          : "atrasado";
       }
       return "pendente";
     }
@@ -239,7 +238,7 @@ function renderData(data) {
     .forEach((item) => {
       const card = document.createElement("div");
       card.className =
-        "bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700 p-6 transition-all flex flex-col";
+        "bg-white dark:bg-slate-800/80 rounded-3xl shadow-sm hover:shadow-xl border border-slate-200/60 dark:border-slate-700 p-6 transition-all duration-300 hover:-translate-y-1 flex flex-col backdrop-blur-sm group";
 
       let tagsHtml = "";
       if (item.stakeholders) {
@@ -247,86 +246,97 @@ function renderData(data) {
           .split(",")
           .map(
             (s) =>
-              `<span class="inline-block bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs px-2 py-1 rounded-md mr-1 mb-1"><i class="fa-solid fa-users text-[10px] mr-1"></i>${s.trim()}</span>`,
+              `<span class="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-2.5 py-1 rounded-full mr-1.5 mb-1.5 shadow-sm"><i class="fa-solid fa-users opacity-70"></i>${s.trim()}</span>`,
           )
           .join("");
       }
 
       let feedbackHtml = "";
-      if (item.feedbacks && item.pessoa_feedback_name && item.pessoa_feedback_name !== 'Nenhum') {
+      if (
+        item.feedbacks &&
+        item.pessoa_feedback_name &&
+        item.pessoa_feedback_name !== "Nenhum"
+      ) {
         feedbackHtml = `
-            <div class="mt-4 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 rounded-lg border border-indigo-100 dark:border-indigo-800/30">
-                <p class="text-xs font-semibold text-primary dark:text-indigo-400 mb-1"><i class="fa-solid fa-quote-left mr-1"></i> ${item.pessoa_feedback_name} disse:</p>
-                <p class="text-sm italic text-slate-600 dark:text-slate-300">"${item.feedbacks}"</p>
+            <div class="mt-4 p-4 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <div class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center text-primary dark:text-indigo-300 text-[10px]">
+                        <i class="fa-solid fa-quote-left"></i>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700 dark:text-indigo-200">${item.pessoa_feedback_name}</p>
+                </div>
+                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pl-7">"${item.feedbacks}"</p>
             </div>`;
       }
 
       let statusBadge = "";
       const itemStatus = getItemStatus(item);
       if (itemStatus === "no_prazo") {
-        statusBadge = `<span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-check mr-1"></i>No Prazo</span>`;
+        statusBadge = `<span class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/50 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1 shadow-sm"><i class="fa-solid fa-check"></i>No Prazo</span>`;
       } else if (itemStatus === "atrasado") {
-        statusBadge = `<span class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Atrasado</span>`;
+        statusBadge = `<span class="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-800/50 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1 shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i>Atrasado</span>`;
       } else if (itemStatus === "atrasado_pendente") {
-        statusBadge = `<span class="bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Atrasado - Pendente de preenchimento</span>`;
+        statusBadge = `<span class="bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200/60 dark:border-red-800/50 text-[10px] font-bold px-3 py-1.5 rounded-full animate-pulse backdrop-blur-sm flex items-center gap-1 shadow-sm"><i class="fa-solid fa-clock-rotate-left"></i>Atrasado - Pendente</span>`;
       } else {
-        statusBadge = `<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded-full"><i class="fa-regular fa-clock mr-1"></i>Pendente</span>`;
+        statusBadge = `<span class="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 text-[10px] font-bold px-3 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1 shadow-sm"><i class="fa-regular fa-clock"></i>Pendente</span>`;
       }
 
       let prazoHtml = "";
       let entregaHtml = "";
       if (item.tipo_prazo === "horas") {
         if (item.horas_trabalhadas) {
-          prazoHtml = `<span title="Horas Planejadas"><i class="fa-regular fa-clock mr-1"></i> Planejado: ${decimalToTime(item.horas_trabalhadas)}</span>`;
+          prazoHtml = `<div class="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700" title="Horas Planejadas"><i class="fa-regular fa-clock opacity-70"></i> ${decimalToTime(item.horas_trabalhadas)}</div>`;
         }
         if (item.horas_gastas) {
-          entregaHtml = `<span title="Horas Gastas"><i class="fa-solid fa-stopwatch mr-1"></i> Gasto: ${decimalToTime(item.horas_gastas)}</span>`;
+          entregaHtml = `<div class="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700" title="Horas Gastas"><i class="fa-solid fa-stopwatch opacity-70"></i> ${decimalToTime(item.horas_gastas)}</div>`;
         }
       } else {
         if (item.prazo) {
-          prazoHtml = `<span title="Prazo Planejado"><i class="fa-regular fa-calendar mr-1"></i> Prazo: ${item.prazo.split("-").reverse().join("/")}</span>`;
+          prazoHtml = `<div class="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700" title="Prazo Planejado"><i class="fa-regular fa-calendar opacity-70"></i> ${item.prazo.split("-").reverse().join("/")}</div>`;
         }
         if (item.data_entrega) {
-          entregaHtml = `<span title="Data de Entrega"><i class="fa-solid fa-flag-checkered mr-1"></i> Entregue: ${item.data_entrega.split("-").reverse().join("/")}</span>`;
+          entregaHtml = `<div class="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-lg border border-slate-100 dark:border-slate-700" title="Data de Entrega"><i class="fa-solid fa-flag-checkered opacity-70"></i> ${item.data_entrega.split("-").reverse().join("/")}</div>`;
         }
       }
 
       card.innerHTML = `
-            <div class="flex justify-between items-start mb-4 gap-2">
-                <div>
-                    <span class="inline-block px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-primary dark:text-indigo-300 text-xs font-semibold rounded-md mb-2 uppercase tracking-wide">${item.projeto_name}</span>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">${item.atividade}</h3>
+            <div class="flex justify-between items-start mb-5 gap-3">
+                <div class="flex-1">
+                    <span class="inline-block px-2.5 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900/40 dark:to-purple-900/40 border border-indigo-200/50 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold rounded-md mb-3 uppercase tracking-widest shadow-sm">${item.projeto_name}</span>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white leading-tight">${item.atividade}</h3>
                 </div>
-                <div class="flex-shrink-0 text-right mt-1 font-sans flex gap-2">
-                    <button class="text-slate-400 hover:text-indigo-500 transition-colors" title="Editar Registro" onclick="openEditModal('${item.id}')">
-                        <i class="fa-solid fa-pencil text-sm"></i>
-                    </button>
-                    <button class="text-slate-400 hover:text-red-500 transition-colors" title="Excluir Registro" onclick="deleteRecord('${item.id}')">
-                        <i class="fa-solid fa-trash-alt text-sm"></i>
-                    </button>
+                <div class="flex-shrink-0 flex flex-col items-end gap-2">
                     ${statusBadge}
+                    <div class="flex gap-1.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 transition-colors shadow-sm" title="Editar Registro" onclick="openEditModal('${item.id}')">
+                            <i class="fa-solid fa-pencil text-xs"></i>
+                        </button>
+                        <button class="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700/50 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 transition-colors shadow-sm" title="Excluir Registro" onclick="deleteRecord('${item.id}')">
+                            <i class="fa-solid fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             
-            <div class="flex-grow space-y-3 mb-4">
-                ${item.meta ? `<p class="text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-bullseye w-5 text-slate-400"></i> <strong>Meta:</strong> ${item.meta}</p>` : ""}
-                ${item.impacto ? `<p class="text-sm text-slate-600 dark:text-slate-300"><i class="fa-solid fa-arrow-trend-up w-5 text-emerald-500"></i> <strong>Impacto:</strong> ${item.impacto}</p>` : ""}
+            <div class="flex-grow space-y-3.5 mb-5">
+                ${item.meta ? `<div class="flex gap-2"><i class="fa-solid fa-bullseye mt-0.5 w-4 text-slate-400 dark:text-slate-500"></i><p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-200">Meta:</strong> ${item.meta}</p></div>` : ""}
+                ${item.impacto ? `<div class="flex gap-2"><i class="fa-solid fa-arrow-trend-up mt-0.5 w-4 text-emerald-500 dark:text-emerald-400"></i><p class="text-sm text-slate-600 dark:text-slate-300"><strong class="text-slate-800 dark:text-slate-200">Impacto:</strong> ${item.impacto}</p></div>` : ""}
                 ${feedbackHtml}
             </div>
             
-            <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700">
-                <div class="flex flex-wrap justify-between items-center text-xs text-slate-500 dark:text-slate-400 mb-2 gap-2">
+            <div class="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700/50 flex flex-col gap-3">
+                <div class="flex flex-wrap items-center gap-2">
                     ${prazoHtml}
                     ${entregaHtml}
                 </div>
-                <div>${tagsHtml}</div>
+                ${tagsHtml ? `<div>${tagsHtml}</div>` : ""}
             </div>
         `;
       container.appendChild(card);
     });
-};
+}
+// FIM ALTERACAO
 
-// Declaração de suporte a getItemStatus fora do renderData para uso no filtro
 function getItemStatus(item) {
   if (item.tipo_prazo === "data") {
     if (item.data_entrega && item.prazo) {
@@ -338,73 +348,73 @@ function getItemStatus(item) {
     return "pendente";
   } else {
     if (item.horas_gastas && item.horas_trabalhadas) {
-      return Number(item.horas_gastas) <= Number(item.horas_trabalhadas) ? "no_prazo" : "atrasado";
+      return Number(item.horas_gastas) <= Number(item.horas_trabalhadas)
+        ? "no_prazo"
+        : "atrasado";
     }
     return "pendente";
   }
 }
 
-// Abre o modal em modo de edição
 window.openEditModal = async function (recordId) {
-    const record = window.allRegistersData.find(r => String(r.id) === String(recordId));
-    if (!record) {
-        showToast("Registro não encontrado para edição.", "error");
-        return;
-    }
+  const record = window.allRegistersData.find(
+    (r) => String(r.id) === String(recordId),
+  );
+  if (!record) {
+    showToast("Registro não encontrado para edição.", "error");
+    return;
+  }
 
-    const form = document.getElementById("effectaForm");
-    form.reset(); // Limpa o formulário antes de preencher
+  const form = document.getElementById("effectaForm");
+  form.reset();
 
-    // Preenche os campos do formulário com os dados do registro
-    form.querySelector('#recordIdHidden').value = record.id; // Campo oculto para o ID do registro
-    document.getElementById('modal-title').textContent = 'Editar Registro';
+  form.querySelector("#recordIdHidden").value = record.id;
+  document.getElementById("modal-title").textContent = "Editar Registro";
 
-    // Campos de texto e textarea
-    for (const key in record) {
-        const input = form.querySelector(`[name="${key}"]`);
-        if (input) {
-            if (input.type === 'radio') {
-                if (input.value === record[key]) {
-                    input.checked = true;
-                }
-            } else {
-                if (key === 'horas_trabalhadas' || key === 'horas_gastas') {
-                    input.value = decimalToTime(record[key]);
-                } else {
-                    input.value = record[key];
-                }
-            }
+  for (const key in record) {
+    const input = form.querySelector(`[name="${key}"]`);
+    if (input) {
+      if (input.type === "radio") {
+        if (input.value === record[key]) {
+          input.checked = true;
         }
+      } else {
+        if (key === "horas_trabalhadas" || key === "horas_gastas") {
+          input.value = decimalToTime(record[key]);
+        } else {
+          input.value = record[key];
+        }
+      }
     }
+  }
 
-    // Special handling for hidden inputs with associated search inputs
-    document.getElementById('projetoSearch').value = record.projeto_name || "";
-    document.getElementById('projetoHidden').value = record.projeto_id || "";
-    document.getElementById('autorFeedbackSearch').value = record.pessoa_feedback_name !== 'Nenhum' ? record.pessoa_feedback_name : "";
-    document.getElementById('autorFeedbackHidden').value = record.pessoa_feedback_id || "";
+  document.getElementById("projetoSearch").value = record.projeto_name || "";
+  document.getElementById("projetoHidden").value = record.projeto_id || "";
+  document.getElementById("autorFeedbackSearch").value =
+    record.pessoa_feedback_name !== "Nenhum" ? record.pessoa_feedback_name : "";
+  document.getElementById("autorFeedbackHidden").value =
+    record.pessoa_feedback_id || "";
 
-    // Lida com a alternância de campos de prazo/horas
-    window.togglePrazoInput(); 
+  window.togglePrazoInput();
 
-    openModal(); // Abre o modal
+  openModal();
 };
 
-// Deleta um registro
 window.deleteRecord = async function (recordId) {
-    const confirmed = await showConfirm(
-        "Excluir Registro?",
-        "Tem certeza que deseja excluir este registro? Esta ação é irreversível e os dados serão removidos permanentemente.",
-        "danger"
-    );
-    
-    if (!confirmed) return;
+  const confirmed = await showConfirm(
+    "Excluir Registro?",
+    "Tem certeza que deseja excluir este registro? Esta ação é irreversível e os dados serão removidos permanentemente.",
+    "danger",
+  );
 
-    try {
-        await EffectaAPI.deleteRegister(recordId);
-        await loadData(); // Recarrega os dados após a exclusão
-        showToast("Registro excluído com sucesso!", "success");
-    } catch (err) {
-        console.error("Erro ao excluir registro:", err);
-        showToast("Erro ao excluir o registro.", "error");
-    }
+  if (!confirmed) return;
+
+  try {
+    await EffectaAPI.deleteRegister(recordId);
+    await loadData();
+    showToast("Registro excluído com sucesso!", "success");
+  } catch (err) {
+    console.error("Erro ao excluir registro:", err);
+    showToast("Erro ao excluir o registro.", "error");
+  }
 };
