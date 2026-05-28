@@ -3,6 +3,7 @@ require_once dirname(__DIR__) . '/src/config/env.php';
 require_once dirname(__DIR__) . '/src/EffectaORM.php';
 require_once dirname(__DIR__) . '/src/helpers/SimpleJWT.php';
 require_once dirname(__DIR__) . '/src/helpers/auth.php';
+require_once dirname(__DIR__) . '/src/helpers/DataSync.php';
 
 $storageType = 'json';
 $configFile = dirname(__DIR__) . '/src/config/database.php';
@@ -489,6 +490,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+    if ($action === 'import_data') {
+        try {
+            $result = DataSync::performImport($orm, $authenticatedUserId, $input);
+            echo json_encode(['success' => true, 'result' => $result]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+        exit;
+    }
 }
 
 // API Routes (GET)
@@ -538,6 +550,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
     if ($action === 'get_registers') {
         echo json_encode($orm->getAll('registers', $authenticatedUserId));
+        exit;
+    }
+
+    if ($action === 'get_export_data') {
+        $data = [
+            'people' => $orm->getAll('people', $authenticatedUserId),
+            'projects' => $orm->getAll('projects', $authenticatedUserId),
+            'registers' => $orm->getAll('registers', $authenticatedUserId)
+        ];
+        echo json_encode(DataSync::prepareExport($data));
         exit;
     }
 }

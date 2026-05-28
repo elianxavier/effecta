@@ -22,6 +22,7 @@ if (isset($_COOKIE['access_token'])) {
                 </div>
                 <nav class="hidden md:flex space-x-8">
                     <a href="index.php?page=registros" class="<?= ($currentPage === 'registros') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Registros</a>
+                    <a href="index.php?page=import_export" class="<?= ($currentPage === 'import_export') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Importar/Exportar</a>
                     <a href="index.php?page=management" class="<?= ($currentPage === 'management') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciar Entidades</a>
                     <?php if (isset($payload['role']) && $payload['role'] === 'admin'): ?>
                         <a href="index.php?page=users" class="<?= ($currentPage === 'users') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciamento de Usuários</a>

@@ -283,6 +283,11 @@ class EffectaORM
             $results = $this->findWhereJson($table, $conditions, $authenticatedUserId);
             return reset($results) ?: null; // Return the first matching item or null
         } elseif ($this->storageType === 'mysql') {
+            // Type safety check for numeric IDs
+            if ($column === 'id' && !is_numeric($value)) {
+                return null;
+            }
+
             $sql = "SELECT * FROM `{$table}` WHERE `{$column}` = ?";
             $params = [$value];
 
@@ -329,6 +334,11 @@ class EffectaORM
             }
             return $this->getBy($table, 'id', $id, $authenticatedUserId); // Use authenticatedUserId in getBy
         } elseif ($this->storageType === 'mysql') {
+            // Type safety check for numeric IDs
+            if (!is_numeric($id)) {
+                return null;
+            }
+
             $sets = [];
             $params = [];
             foreach ($data as $key => $val) {
@@ -374,6 +384,11 @@ class EffectaORM
             file_put_contents($file, json_encode(array_values($filtered), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
             return true;
         } elseif ($this->storageType === 'mysql') {
+            // Type safety check for numeric columns (id, user_id, projeto_id, etc)
+            if (in_array($column, ['id', 'user_id', 'projeto_id', 'pessoa_feedback_id']) && !is_numeric($value)) {
+                return false;
+            }
+
             $sql = "DELETE FROM `{$table}` WHERE `{$column}` = ?";
             $params = [$value];
 
