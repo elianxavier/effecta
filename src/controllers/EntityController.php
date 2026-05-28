@@ -286,6 +286,76 @@ class EntityController {
         }
     }
 
+    public function getDashboardStats() {
+        $projects = $this->orm->getAll('projects', $this->authId);
+        $registers = $this->orm->getAll('registers', $this->authId);
+        
+        $now = new DateTime();
+        $currentMonth = $now->format('Y-m');
+        
+        $totalProjects = count($projects);
+        $totalRegisters = count($registers);
+        
+        $onTimeCurrentMonth = 0;
+        $delayedCurrentMonth = 0;
+        
+        // Stats for chart (Overall comparison)
+        $totalOnTime = 0;
+        $totalDelayed = 0;
+        $totalPending = 0;
+
+        foreach ($registers as $r) {
+            $isCompleted = false;
+            $isOnTime = false;
+            $isDelayed = false;
+            
+            $itemMonth = null;
+            if ($r['tipo_prazo'] === 'data') {
+                $itemMonth = $r['prazo'] ? substr($r['prazo'], 0, 7) : null;
+                
+                if ($r['data_entrega'] && $r['prazo']) {
+                    $isCompleted = true;
+                    $isOnTime = ($r['data_entrega'] <= $r['prazo']);
+                } elseif (!$r['data_entrega'] && $r['prazo']) {
+                    $isDelayed = ($now->format('Y-m-d') > $r['prazo']);
+                }
+            } else {
+                // If it's hours, we don't have a specific month for comparison in the same way, 
+                // but let's assume month of creation for "current month" context if no better field.
+                $itemMonth = substr($r['created_at'], 0, 7);
+                
+                if ($r['horas_gastas'] && $r['horas_trabalhadas']) {
+                    $isCompleted = true;
+                    $isOnTime = (float)$r['horas_gastas'] <= (float)$r['horas_trabalhadas'];
+                }
+            }
+
+            // Global counters for chart
+            if ($isCompleted) {
+                if ($isOnTime) $totalOnTime++; else $totalDelayed++;
+            } else {
+                if ($isDelayed) $totalDelayed++; else $totalPending++;
+            }
+
+            // Monthly counters
+            if ($itemMonth === $currentMonth) {
+                if ($isCompleted && $isOnTime) $onTimeCurrentMonth++;
+                if ($isDelayed || ($isCompleted && !$isOnTime)) $delayedCurrentMonth++;
+            }
+        }
+
+        return [
+            'total_projects' => $totalProjects,
+            'total_registers' => $totalRegisters,
+            'on_time_month' => $onTimeCurrentMonth,
+            'delayed_month' => $delayedCurrentMonth,
+            'chart_data' => [
+                'labels' => ['No Prazo', 'Atrasados', 'Pendentes'],
+                'values' => [$totalOnTime, $totalDelayed, $totalPending]
+            ]
+        ];
+    }
+
     public function getExportData() {
         $data = [
             'people' => $this->orm->getAll('people', $this->authId),

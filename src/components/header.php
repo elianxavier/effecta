@@ -15,6 +15,7 @@ if (isset($_COOKIE['access_token'])) {
 }
 
 $navItems = [
+    'dashboard' => ['label' => 'Dashboard', 'roles' => null],
     'registros' => ['label' => 'Registros', 'roles' => null],
     'import_export' => ['label' => 'Importar/Exportar', 'roles' => null],
     'management' => ['label' => 'Entidades', 'roles' => null],
