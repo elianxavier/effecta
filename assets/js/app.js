@@ -391,9 +391,13 @@ window.openEditModal = async function (recordId) {
 
 // Deleta um registro
 window.deleteRecord = async function (recordId) {
-    if (!confirm("Tem certeza que deseja excluir este registro?")) {
-        return;
-    }
+    const confirmed = await showConfirm(
+        "Excluir Registro?",
+        "Tem certeza que deseja excluir este registro? Esta ação é irreversível e os dados serão removidos permanentemente.",
+        "danger"
+    );
+    
+    if (!confirmed) return;
 
     try {
         await EffectaAPI.deleteRegister(recordId);
