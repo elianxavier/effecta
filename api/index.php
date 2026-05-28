@@ -182,6 +182,11 @@ switch ($action) {
         $response = $entityController->adminUpdateFeedback($input);
         break;
 
+    // Dashboard
+    case 'get_dashboard_stats':
+        $response = $entityController->getDashboardStats();
+        break;
+
     // Import/Export
     case 'get_export_data':
         $response = $entityController->getExportData();
