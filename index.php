@@ -11,11 +11,11 @@ require_once __DIR__ . '/src/EffectaORM.php';
 require_once __DIR__ . '/src/helpers/auth.php';
 
 // Roteamento de Páginas (Front Controller)
-$page = $_GET['page'] ?? 'registros';
+$page = $_GET['page'] ?? 'dashboard';
 
 // Sanitiza o nome do parâmetro de página para evitar Directory Traversal
 if (!preg_match('/^[a-zA-Z0-9_]+$/', $page)) {
-    $page = 'registros';
+    $page = 'dashboard';
 }
 
 // Verifica Autenticação
@@ -64,7 +64,7 @@ $publicPages = ['login'];
 if (in_array($page, $publicPages)) {
     // Se já estiver logado, não pode ver a tela de login
     if ($isLoggedIn) {
-        header('Location: index.php?page=registros');
+        header('Location: index.php?page=dashboard');
         exit;
     }
 } else {
@@ -93,6 +93,6 @@ $pageFile = __DIR__ . '/pages/' . $page . '.php';
 if (file_exists($pageFile)) {
     include_once $pageFile;
 } else {
-    // Fallback para a página de registros caso a página não exista
-    include_once __DIR__ . '/pages/registros.php';
+    // Fallback para a página de dashboard caso a página não exista
+    include_once __DIR__ . '/pages/dashboard.php';
 }
