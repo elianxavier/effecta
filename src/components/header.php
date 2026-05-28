@@ -23,14 +23,23 @@ if (isset($_COOKIE['access_token'])) {
                 <nav class="hidden md:flex space-x-8">
                     <a href="index.php?page=registros" class="<?= ($currentPage === 'registros') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Registros</a>
                     <a href="index.php?page=import_export" class="<?= ($currentPage === 'import_export') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Importar/Exportar</a>
-                    <a href="index.php?page=management" class="<?= ($currentPage === 'management') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciar Entidades</a>
-                    <?php if (isset($payload['role']) && $payload['role'] === 'admin'): ?>
-                        <a href="index.php?page=users" class="<?= ($currentPage === 'users') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Gerenciamento de Usuários</a>
+                    <a href="index.php?page=management" class="<?= ($currentPage === 'management') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Entidades</a>
+                    <a href="index.php?page=feedbacks" class="<?= ($currentPage === 'feedbacks') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Feedback</a>
+                    <?php if (isset($payload['role']) && in_array($payload['role'], ['admin', 'dev'])): ?>
+                        <a href="index.php?page=users" class="<?= ($currentPage === 'users') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Usuários</a>
                     <?php endif; ?>
-                    <a href="index.php?page=profile" class="<?= ($currentPage === 'profile') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Meu Perfil</a>
+                    <?php if (isset($payload['role']) && $payload['role'] === 'dev'): ?>
+                        <a href="index.php?page=feedback_management" class="<?= ($currentPage === 'feedback_management') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Feedbacks (ADM)</a>
+                    <?php endif; ?>
+                    <a href="index.php?page=profile" class="<?= ($currentPage === 'profile') ? 'border-b-2 border-primary text-slate-900 dark:text-white' : 'border-b-2 border-transparent hover:border-primary text-slate-700 dark:text-slate-300' ?> px-1 pt-1 text-sm font-medium">Perfil</a>
                 </nav>
             </div>
             <div class="flex items-center gap-4">
+                <?php if (isset($payload['role']) && $payload['role'] === 'dev'): ?>
+                    <div id="globalDevAlert" class="hidden text-red-500 animate-bounce" title="Feedbacks Críticos!">
+                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                    </div>
+                <?php endif; ?>
                 <span class="hidden sm:inline text-xs font-semibold text-slate-500 dark:text-slate-400">Olá, <strong class="text-slate-700 dark:text-slate-200"><?= htmlspecialchars($userName) ?></strong></span>
 
                 <button id="themeToggle" class="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400" title="Alternar Tema">

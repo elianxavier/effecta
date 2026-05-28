@@ -19,15 +19,60 @@ $orm = new EffectaORM($storageType);
 $testPersonId = null;
 $testProjectId = null;
 $testRegisterId = null;
+$mockUserId = null;
 
 try {
+    // ----------------------------------------------------
+    // SETUP: Insercao de Usuario Mock para Teste
+    // ----------------------------------------------------
+    echo "Configurando usuario de teste... ";
+    // Tenta encontrar um usuario de teste existente ou cria um
+    if ($storageType === 'mysql') {
+        $dsn = "mysql:host={$config['host']};dbname={$config['dbname']};charset={$config['charset']}";
+        $pdo = new PDO($dsn, $config['user'], $config['password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute(['test-cli@effecta.com']);
+        $mockUserId = $stmt->fetchColumn();
+        
+        if (!$mockUserId) {
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute(['Test CLI User', 'test-cli@effecta.com', 'hash', 'common', date('Y-m-d H:i:s')]);
+            $mockUserId = $pdo->lastInsertId();
+        }
+    } else {
+        $usersFile = __DIR__ . '/data/users.json';
+        $users = json_decode(file_get_contents($usersFile), true) ?: [];
+        $found = false;
+        foreach ($users as $u) {
+            if ($u['email'] === 'test-cli@effecta.com') {
+                $mockUserId = $u['id'];
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $mockUserId = time();
+            $users[] = [
+                'id' => $mockUserId,
+                'name' => 'Test CLI User',
+                'email' => 'test-cli@effecta.com',
+                'password_hash' => 'hash',
+                'role' => 'common',
+                'active' => true,
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+            file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT));
+        }
+    }
+    echo "\033[32m[OK - ID: $mockUserId]\033[0m\n";
+
     // ----------------------------------------------------
     // TESTE 1: Insercao de Pessoa (Autor)
     // ----------------------------------------------------
     echo "Testando insercao de pessoa... ";
     $personData = $orm->insert('people', [
         'name' => 'Testador Automatizado CLI'
-    ]);
+    ], $mockUserId);
     if (isset($personData['id']) && $personData['name'] === 'Testador Automatizado CLI') {
         $testPersonId = $personData['id'];
         echo "\033[32m[PASSOU]\033[0m\n";
@@ -41,7 +86,7 @@ try {
     echo "Testando insercao de projeto... ";
     $projectData = $orm->insert('projects', [
         'name' => 'Projeto de Teste CLI'
-    ]);
+    ], $mockUserId);
     if (isset($projectData['id']) && $projectData['name'] === 'Projeto de Teste CLI') {
         $testProjectId = $projectData['id'];
         echo "\033[32m[PASSOU]\033[0m\n";
@@ -54,7 +99,7 @@ try {
     // ----------------------------------------------------
     echo "Testando insercao de registro... ";
     $registerPayload = [
-        'projeto' => 'Projeto de Teste CLI',
+        'projeto_id' => $testProjectId,
         'atividade' => 'Implementando testes de ORM',
         'tipo_prazo' => 'horas',
         'horas_trabalhadas' => 4.5,
@@ -64,12 +109,12 @@ try {
         'impacto' => 'Seguranca e estabilidade na integracao continua',
         'treinamentos' => 'Nenhum',
         'stakeholders' => 'Elian, Equipe',
-        'autor_feedback' => 'Testador Automatizado CLI',
+        'pessoa_feedback_id' => $testPersonId,
         'feedbacks' => 'Excelente trabalho!'
     ];
 
-    $registerData = $orm->insert('registers', $registerPayload);
-    if (isset($registerData['id']) && !isset($registerData['o_que_fiz']) && $registerData['atividade'] === 'Implementando testes de ORM') {
+    $registerData = $orm->insert('registers', $registerPayload, $mockUserId);
+    if (isset($registerData['id']) && $registerData['atividade'] === 'Implementando testes de ORM') {
         $testRegisterId = $registerData['id'];
         echo "\033[32m[PASSOU]\033[0m\n";
     } else {
@@ -80,7 +125,7 @@ try {
     // TESTE 4: Leitura de todos os Registros (getAll)
     // ----------------------------------------------------
     echo "Testando recuperacao de todos os registros... ";
-    $allRegisters = $orm->getAll('registers');
+    $allRegisters = $orm->getAll('registers', $mockUserId);
     $found = false;
     foreach ($allRegisters as $reg) {
         if ($reg['id'] === $testRegisterId) {
