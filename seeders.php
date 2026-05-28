@@ -41,8 +41,8 @@ if ($storageType === 'mysql') {
             echo "Seeders MySQL inseridos com sucesso!\n";
 
             // Add some test feedbacks
-            $stmtFeed = $pdo->prepare("INSERT INTO `feedbacks` (user_id, type, subject, message, status, created_at) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtFeed->execute([3, 'bug', 'Erro no Menu Lateral', 'O menu lateral some em telas pequenas.', 'pendente', $now]);
+            //$stmtFeed = $pdo->prepare("INSERT INTO `feedbacks` (user_id, type, subject, message, status, created_at) VALUES (?, ?, ?, ?, ?, ?)");
+            //$stmtFeed->execute([3, 'bug', 'Erro no Menu Lateral', 'O menu lateral some em telas pequenas.', 'pendente', $now]);
             echo "Feedback de teste (Bug) inserido para Dev.\n";
         } else {
             echo "A tabela `users` ja possui dados. Seeders ignorados.\n";
@@ -53,7 +53,7 @@ if ($storageType === 'mysql') {
 } else {
     $dataDir = __DIR__ . '/data';
     $usersFile = $dataDir . '/users.json';
-    
+
     if (file_exists($usersFile)) {
         $users = json_decode(file_get_contents($usersFile), true) ?: [];
         if (empty($users)) {
