@@ -3,6 +3,7 @@ require_once dirname(__DIR__) . '/src/config/env.php';
 require_once dirname(__DIR__) . '/src/EffectaORM.php';
 require_once dirname(__DIR__) . '/src/helpers/SimpleJWT.php';
 require_once dirname(__DIR__) . '/src/helpers/auth.php';
+require_once dirname(__DIR__) . '/src/helpers/DataSync.php';
 
 $storageType = 'json';
 $configFile = dirname(__DIR__) . '/src/config/database.php';
@@ -491,33 +492,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'import_data') {
-        $people = $input['people'] ?? [];
-        $projects = $input['projects'] ?? [];
-        $registers = $input['registers'] ?? [];
-
         try {
-            foreach ($people as $person) {
-                unset($person['id']);
-                unset($person['created_at']);
-                unset($person['user_id']);
-                $orm->insert('people', $person, $authenticatedUserId);
-            }
-
-            foreach ($projects as $project) {
-                unset($project['id']);
-                unset($project['created_at']);
-                unset($project['user_id']);
-                $orm->insert('projects', $project, $authenticatedUserId);
-            }
-
-            foreach ($registers as $register) {
-                unset($register['id']);
-                unset($register['created_at']);
-                unset($register['user_id']);
-                $orm->insert('registers', $register, $authenticatedUserId);
-            }
-
-            echo json_encode(['success' => true]);
+            $result = DataSync::performImport($orm, $authenticatedUserId, $input);
+            echo json_encode(['success' => true, 'result' => $result]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -582,7 +559,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'projects' => $orm->getAll('projects', $authenticatedUserId),
             'registers' => $orm->getAll('registers', $authenticatedUserId)
         ];
-        echo json_encode($data);
+        echo json_encode(DataSync::prepareExport($data));
         exit;
     }
 }
