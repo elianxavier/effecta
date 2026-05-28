@@ -245,12 +245,12 @@ setInterval(checkDevAlerts, 60000);
 document.addEventListener("DOMContentLoaded", checkDevAlerts);
 
 window.reportFeedback = async function (id) {
-  if (
-    !confirm(
-      "Deseja denunciar este bug? Se confirmado, este card não aparecerá mais para você.",
-    )
-  )
-    return;
+  const confirmed = await showConfirm(
+    "Denunciar Bug?",
+    "Deseja realmente denunciar este bug? Ao confirmar, este card deixará de aparecer para você permanentemente.",
+    "warning"
+  );
+  if (!confirmed) return;
 
   try {
     await EffectaAPI.request("api/index.php?action=report_feedback", {
@@ -280,12 +280,12 @@ window.handleLike = async function (id) {
 };
 
 window.archiveFeedback = async function (id) {
-  if (
-    !confirm(
-      "Deseja retirar este feedback da sua lista? Ele continuará no sistema para análise da equipe.",
-    )
-  )
-    return;
+  const confirmed = await showConfirm(
+    "Arquivar Feedback?",
+    "Deseja retirar este feedback da sua lista? Ele continuará no sistema para análise técnica, mas não será mais exibido aqui.",
+    "danger"
+  );
+  if (!confirmed) return;
 
   try {
     await EffectaAPI.archiveFeedback(id);
