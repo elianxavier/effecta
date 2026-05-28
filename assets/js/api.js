@@ -5,7 +5,7 @@ const EffectaAPI = {
 
   async request(url, options = {}) {
     options.headers = options.headers || {};
-    
+
     // Obtém o token de acesso
     let accessToken = localStorage.getItem("access_token");
     if (accessToken) {
@@ -25,7 +25,11 @@ const EffectaAPI = {
                 const retryRes = await fetch(url, options);
                 if (!retryRes.ok) {
                   const errData = await retryRes.json().catch(() => ({}));
-                  reject(new Error(errData.error || `Erro de HTTP: ${retryRes.status}`));
+                  reject(
+                    new Error(
+                      errData.error || `Erro de HTTP: ${retryRes.status}`,
+                    ),
+                  );
                 } else {
                   resolve(await retryRes.json());
                 }
@@ -35,7 +39,7 @@ const EffectaAPI = {
             },
             reject: (err) => {
               reject(err);
-            }
+            },
           });
         });
       }
@@ -46,23 +50,25 @@ const EffectaAPI = {
       if (refreshed) {
         this.isRefreshing = false;
         const newAccessToken = localStorage.getItem("access_token");
-        
+
         // Resolve a fila de requisições pendentes
         const currentQueue = [...this.refreshQueue];
         this.refreshQueue = [];
-        currentQueue.forEach(item => item.resolve(newAccessToken));
+        currentQueue.forEach((item) => item.resolve(newAccessToken));
 
         // Refaz a chamada original com o novo token de acesso
         options.headers["Authorization"] = `Bearer ${newAccessToken}`;
         res = await fetch(url, options);
       } else {
         this.isRefreshing = false;
-        
+
         // Rejeita a fila de requisições pendentes
-        const error = new Error("Sessao expirada. Por favor, faca login novamente.");
+        const error = new Error(
+          "Sessao expirada. Por favor, faca login novamente.",
+        );
         const currentQueue = [...this.refreshQueue];
         this.refreshQueue = [];
-        currentQueue.forEach(item => item.reject(error));
+        currentQueue.forEach((item) => item.reject(error));
 
         // Se falhar o refresh (token expirou ou revogado), desloga
         this.clearSessionAndRedirect();
@@ -82,13 +88,13 @@ const EffectaAPI = {
     try {
       const res = await fetch(`${this.baseUrl}?action=refresh`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!res.ok) return false;
 
       const data = await res.json();
-      
+
       // Armazena a nova sessão rotacionada
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("user_name", data.user.name);
@@ -106,10 +112,10 @@ const EffectaAPI = {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_role");
-    
+
     // Deleta o cookie do access token
     document.cookie = "access_token=; max-age=0; path=/";
-    
+
     window.location.href = "index.php?page=login";
   },
 
@@ -247,6 +253,34 @@ const EffectaAPI = {
     });
   },
 
+  async saveFeedback(data) {
+    return this.request(`${this.baseUrl}?action=save_feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getFeedbacks(tab = 'active') {
+    return this.request(`${this.baseUrl}?action=get_feedbacks&tab=${tab}`);
+  },
+
+  async likeFeedback(id) {
+    return this.request(`${this.baseUrl}?action=like_feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  },
+
+  async archiveFeedback(id) {
+    return this.request(`${this.baseUrl}?action=archive_feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+  },
+
   async getExportData() {
     return this.request(`${this.baseUrl}?action=get_export_data`);
   },
@@ -257,5 +291,16 @@ const EffectaAPI = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-  }
+  },
+
+  getAuthenticatedUserId() {
+    const token = localStorage.getItem("access_token");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.user_id;
+    } catch (e) {
+      return null;
+    }
+  },
 };

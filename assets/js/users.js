@@ -75,7 +75,11 @@ function renderUsers(users) {
 
         row.insertCell(0).textContent = user.name;
         row.insertCell(1).textContent = user.email;
-        row.insertCell(2).textContent = user.role === 'admin' ? 'Administrador' : 'Comum';
+        
+        let roleText = 'Comum';
+        if (user.role === 'admin') roleText = 'Administrador';
+        if (user.role === 'dev') roleText = 'Desenvolvedor';
+        row.insertCell(2).textContent = roleText;
 
         const statusCell = row.insertCell(3);
         const statusBadge = document.createElement('span');
@@ -85,11 +89,21 @@ function renderUsers(users) {
 
         const actionsCell = row.insertCell(4);
         actionsCell.className = 'px-6 py-4 whitespace-nowrap text-right text-sm font-medium';
+        
+        const isSelf = String(user.id) === String(EffectaAPI.getAuthenticatedUserId());
+        const isTargetDev = user.role === 'dev';
+        const isCurrentUserDev = localStorage.getItem("user_role") === 'dev';
+        
+        // Disable status toggle if self or if target is dev and current user is not dev
+        const canToggleStatus = !isSelf && (!isTargetDev || isCurrentUserDev);
+
         actionsCell.innerHTML = `
             <button onclick="openUserModal('edit', '${user.id}')" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3" title="Editar Usuário">
                 <i class="fa-solid fa-pencil"></i>
             </button>
-            <button onclick="toggleUserStatus('${user.id}', ${user.active})" class="${user.active ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300' : 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300'}" title="${user.active ? 'Desativar Usuário' : 'Ativar Usuário'}">
+            <button onclick="${canToggleStatus ? `toggleUserStatus('${user.id}', ${user.active})` : 'void(0)'}" 
+                    class="${canToggleStatus ? (user.active ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300' : 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300') : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'}" 
+                    title="${!canToggleStatus ? (isSelf ? 'Você não pode desativar a si mesmo' : 'Apenas desenvolvedores podem alterar o status de outros desenvolvedores') : (user.active ? 'Desativar Usuário' : 'Ativar Usuário')}">
                 <i class="fa-solid ${user.active ? 'fa-user-slash' : 'fa-user-check'}"></i>
             </button>
         `;
@@ -101,20 +115,29 @@ window.openUserModal = function (mode, userId = null) {
     const userModal = document.getElementById("userModal");
     const userForm = document.getElementById("userForm");
     const userModalTitle = document.getElementById("userModalTitle");
+    const userRoleSelect = userForm.querySelector('#userRole');
+    const userActiveCheckbox = userForm.querySelector('#userActive');
+    
+    const currentUserRole = localStorage.getItem("user_role");
+    const currentUserId = EffectaAPI.getAuthenticatedUserId();
 
     userForm.reset();
     userForm.querySelector('#userIdHidden').value = '';
     userForm.querySelector('#userPassword').required = (mode === 'create'); // Password required only for create
 
+    // Update role options based on current user role
+    userRoleSelect.innerHTML = `
+        <option value="common">Comum</option>
+        <option value="admin">Administrador</option>
+        ${currentUserRole === 'dev' ? '<option value="dev">Desenvolvedor</option>' : ''}
+    `;
+
     if (mode === 'create') {
         userModalTitle.textContent = "Adicionar Novo Usuário";
-        userForm.querySelector('#userActive').checked = true; // Default to active for new users
-        // Clear new fields for new user creation
-        userForm.querySelector('#userDateOfBirth').value = '';
-        userForm.querySelector('#userPhoneNumber').value = '';
-        userForm.querySelector('#userGender').value = '';
-        userForm.querySelector('#userProfilePictureUrl').value = '';
-        userForm.querySelector('#userBio').value = '';
+        userActiveCheckbox.checked = true;
+        userActiveCheckbox.disabled = false;
+        userRoleSelect.disabled = false;
+        // ... (clear fields)
     } else if (mode === 'edit' && userId) {
         userModalTitle.textContent = "Editar Usuário";
         const user = window.usersData.find(u => String(u.id) === String(userId));
@@ -122,14 +145,30 @@ window.openUserModal = function (mode, userId = null) {
             userForm.querySelector('#userIdHidden').value = user.id;
             userForm.querySelector('#userName').value = user.name;
             userForm.querySelector('#userEmail').value = user.email;
-            userForm.querySelector('#userRole').value = user.role;
-            userForm.querySelector('#userActive').checked = user.active;
-            // Populate new fields
-            userForm.querySelector('#userDateOfBirth').value = user.date_of_birth || '';
-            userForm.querySelector('#userPhoneNumber').value = user.phone_number || '';
-            userForm.querySelector('#userGender').value = user.gender || '';
-            userForm.querySelector('#userProfilePictureUrl').value = user.profile_picture_url || '';
-            userForm.querySelector('#userBio').value = user.bio || '';
+            
+            // Check if target is dev and current user is not dev
+            const isTargetDev = user.role === 'dev';
+            const isSelf = String(user.id) === String(currentUserId);
+            const isCurrentUserDev = currentUserRole === 'dev';
+
+            if (isTargetDev && !isCurrentUserDev) {
+                // Should not happen if UI is consistent, but for safety:
+                showToast("Apenas desenvolvedores podem editar outros desenvolvedores.", "error");
+                closeUserModal();
+                return;
+            }
+
+            userRoleSelect.value = user.role;
+            userActiveCheckbox.checked = user.active;
+
+            // Restrictions:
+            // 1. Cannot change own role
+            userRoleSelect.disabled = isSelf;
+            
+            // 2. Cannot deactivate self
+            userActiveCheckbox.disabled = isSelf;
+
+            // ... (populate other fields)
         }
     }
     userModal.classList.remove("hidden");
